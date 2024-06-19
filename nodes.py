@@ -144,7 +144,7 @@ class Florence2Run:
 
             results = processor.batch_decode(generated_ids, skip_special_tokens=False)[0]
             out_results.append(results)
-            if task == 'annotate' or task == 'dense_region_caption':
+            if task == 'annotate' or task == 'dense_region_caption' or task == 'caption_to_phrase_grounding':
                 parsed_answer = processor.post_process_generation(results, task="<OD>", image_size=(image_pil.width, image_pil.height))
                 
                 fig, ax = plt.subplots(figsize=(image_pil.width / 100, image_pil.height / 100), dpi=100)
@@ -195,7 +195,7 @@ class Florence2Run:
     
                 plt.close(fig)
 
-            elif task == 'referring_expression_segmentation' or task == 'caption_to_phrase_grounding':
+            elif task == 'referring_expression_segmentation':
                 parsed_answer = processor.post_process_generation(results, task="<REFERRING_EXPRESSION_SEGMENTATION>", image_size=(image_pil.width, image_pil.height))  
                 width, height = image_pil.size
                 # Create a new black image
