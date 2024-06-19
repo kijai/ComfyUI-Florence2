@@ -167,7 +167,7 @@ class Florence2Run:
                     
                     # Add the rectangle to the plot
                     ax.add_patch(rect)
-
+                    facecolor = random.choice(colormap) if len(image) == 1 else 'red'
                     # Add the label
                     plt.text(
                         bbox[0],
@@ -175,7 +175,7 @@ class Florence2Run:
                         label,
                         color='white',
                         fontsize=12,
-                        bbox=dict(facecolor="red", alpha=0.5)
+                        bbox=dict(facecolor=facecolor, alpha=0.5)
                     )
                 # Remove axis and padding around the image
                 ax.axis('off')
@@ -195,7 +195,7 @@ class Florence2Run:
     
                 plt.close(fig)
 
-            elif task == 'referring_expression_segmentation':
+            elif task == 'referring_expression_segmentation' or task == 'caption_to_phrase_grounding':
                 parsed_answer = processor.post_process_generation(results, task="<REFERRING_EXPRESSION_SEGMENTATION>", image_size=(image_pil.width, image_pil.height))  
                 width, height = image_pil.size
                 # Create a new black image
@@ -252,12 +252,15 @@ class Florence2Run:
                 mask_tensor = mask_tensor[:, :, :, 0]
                 out_masks.append(mask_tensor)
                 pbar.update(1)
-
-        out_tensor = torch.cat(out, dim=0)
+        if len(out) > 0:
+            out_tensor = torch.cat(out, dim=0)
+        else:
+            out_tensor = torch.zeros((1, 64,64, 3), dtype=torch.float32, device="cpu")
+            print(out_tensor.shape)
         if len(out_masks) > 0:
             out_mask_tensor = torch.cat(out_masks, dim=0)
         else:
-            out_mask_tensor = None
+            out_mask_tensor = torch.zeros((64,64), dtype=torch.float32, device="cpu")
 
         if not keep_model_loaded:
             print("Offloading model...")
