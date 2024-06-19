@@ -2,7 +2,6 @@ import torch
 import torchvision.transforms.functional as F
 import io
 import os
-from PIL import Image
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from PIL import Image, ImageDraw, ImageFont 
@@ -31,6 +30,16 @@ class DownloadAndLoadFlorence2Model:
                     {
                     "default": 'microsoft/Florence-2-base'
                     }),
+            "precision": ([ 'fp16','bf16','fp32'],
+                    {
+                    "default": 'fp16'
+                    }),
+            "attention": (
+                    [ 'flash_attention_2', 'sdpa', 'eager'],
+                    {
+                    "default": 'flash_attention_2'
+                    }),
+
             },
         }
 
@@ -39,9 +48,10 @@ class DownloadAndLoadFlorence2Model:
     FUNCTION = "loadmodel"
     CATEGORY = "Florence2"
 
-    def loadmodel(self, model):
+    def loadmodel(self, model, precision, attention):
         device = mm.get_torch_device()
         offload_device = mm.unet_offload_device()
+        dtype = {"bf16": torch.bfloat16, "fp16": torch.float16, "fp32": torch.float32}[precision]
 
         model_name = model.rsplit('/', 1)[-1]
         model_path = os.path.join(folder_paths.models_dir, "LLM", model_name)
@@ -52,13 +62,15 @@ class DownloadAndLoadFlorence2Model:
             snapshot_download(repo_id=model,
                             local_dir=model_path,
                             local_dir_use_symlinks=False)
-
-        model = AutoModelForCausalLM.from_pretrained(model_path, trust_remote_code=True)
+            
+        print(f"using , {attention} for attention")
+        model = AutoModelForCausalLM.from_pretrained(model_path, attn_implementation=attention, torch_dtype=dtype,trust_remote_code=True)
         processor = AutoProcessor.from_pretrained(model_path, trust_remote_code=True)
         
         florence2_model = {
             'model': model, 
             'processor': processor,
+            'dtype': dtype
             }
 
         return (florence2_model,)
@@ -102,6 +114,7 @@ class Florence2Run:
         mask_tensor = None
         processor = florence2_model['processor']
         model = florence2_model['model']
+        dtype = florence2_model['dtype']
         model.to(device)
         colormap = ['blue','orange','green','purple','brown','pink','gray','olive','cyan','red',
                     'lime','indigo','violet','aqua','magenta','coral','gold','tan','skyblue']
@@ -124,7 +137,7 @@ class Florence2Run:
         if text_input is not None:
             prompt = prompt + text_input
 
-        image = image.permute(0, 3, 1, 2)
+        image = image.permute(0, 3, 1, 2).to(dtype)
         
         out = []
         out_masks = []
@@ -132,7 +145,7 @@ class Florence2Run:
         pbar = ProgressBar(len(image))
         for img in image:
             image_pil = F.to_pil_image(img)
-            inputs = processor(text=prompt, images=image_pil, return_tensors="pt", do_rescale=False).to(device)
+            inputs = processor(text=prompt, images=image_pil, return_tensors="pt", do_rescale=False).to(dtype).to(device)
 
             generated_ids = model.generate(
                 input_ids=inputs["input_ids"],
