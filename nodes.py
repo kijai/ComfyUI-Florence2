@@ -31,10 +31,6 @@ class DownloadAndLoadFlorence2Model:
                     {
                     "default": 'microsoft/Florence-2-base'
                     }),
-            "precision": ([ 'bf16','fp32'],
-                    {
-                    "default": 'bf16'
-                    }),
             },
         }
 
@@ -43,10 +39,9 @@ class DownloadAndLoadFlorence2Model:
     FUNCTION = "loadmodel"
     CATEGORY = "Florence2"
 
-    def loadmodel(self, model, precision):
+    def loadmodel(self, model):
         device = mm.get_torch_device()
         offload_device = mm.unet_offload_device()
-        dtype = {"bf16": torch.bfloat16, "fp16": torch.float16, "fp32": torch.float32}[precision]
 
         model_name = model.rsplit('/', 1)[-1]
         model_path = os.path.join(folder_paths.models_dir, "LLM", model_name)
