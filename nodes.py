@@ -10,6 +10,18 @@ from PIL import Image, ImageDraw, ImageFont
 import random
 import numpy as np
 
+#workaround for unnecessary flash_attn requirement
+from unittest.mock import patch
+from transformers.dynamic_module_utils import get_imports
+
+def fixed_get_imports(filename: str | os.PathLike) -> list[str]:
+    if not str(filename).endswith("modeling_florence2.py"):
+        return get_imports(filename)
+    imports = get_imports(filename)
+    imports.remove("flash_attn")
+    return imports
+
+
 import comfy.model_management as mm
 from comfy.utils import ProgressBar, load_torch_file
 import folder_paths
@@ -66,7 +78,8 @@ class DownloadAndLoadFlorence2Model:
                             local_dir_use_symlinks=False)
             
         print(f"using , {attention} for attention")
-        model = AutoModelForCausalLM.from_pretrained(model_path, attn_implementation=attention, torch_dtype=dtype,trust_remote_code=True)
+        with patch("transformers.dynamic_module_utils.get_imports", fixed_get_imports): #workaround for unnecessary flash_attn requirement
+            model = AutoModelForCausalLM.from_pretrained(model_path, attn_implementation=attention, torch_dtype=dtype,trust_remote_code=True)
         processor = AutoProcessor.from_pretrained(model_path, trust_remote_code=True)
         
         florence2_model = {
