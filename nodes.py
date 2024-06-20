@@ -251,7 +251,7 @@ class Florence2Run:
                 annotated_image_pil = Image.open(buf)
 
                 annotated_image_tensor = F.to_tensor(annotated_image_pil)
-                out_tensor = annotated_image_tensor.unsqueeze(0).permute(0, 2, 3, 1).cpu().float()
+                out_tensor = annotated_image_tensor[:3, :, :].unsqueeze(0).permute(0, 2, 3, 1).cpu().float()
                 out.append(out_tensor)
                 pbar.update(1)
     
@@ -304,7 +304,8 @@ class Florence2Run:
                         draw.text((text_x, text_y), label, fill=color)  
             
                 image_tensor = F.to_tensor(image_pil)
-                image_tensor = image_tensor.unsqueeze(0).permute(0, 2, 3, 1).cpu().float()
+                image_tensor = image_tensor[:3, :, :].unsqueeze(0).permute(0, 2, 3, 1).cpu().float()
+                
                 out.append(image_tensor)
 
                 mask_tensor = F.to_tensor(mask_image)
@@ -321,7 +322,7 @@ class Florence2Run:
         if len(out_masks) > 0:
             out_mask_tensor = torch.cat(out_masks, dim=0)
         else:
-            out_mask_tensor = torch.zeros((64,64), dtype=torch.float32, device="cpu")
+            out_mask_tensor = torch.zeros((1,64,64), dtype=torch.float32, device="cpu")
 
         if not keep_model_loaded:
             print("Offloading model...")
