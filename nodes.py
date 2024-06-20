@@ -9,6 +9,8 @@ import matplotlib.patches as patches
 from PIL import Image, ImageDraw, ImageColor, ImageFont
 import random
 import numpy as np
+import re
+
 
 #workaround for unnecessary flash_attn requirement
 from unittest.mock import patch
@@ -183,10 +185,16 @@ class Florence2Run:
             )
 
             results = processor.batch_decode(generated_ids, skip_special_tokens=False)[0]
+            print(results)
             # cleanup the special tokens from the final list
-            clean_results = str(results)       
-            clean_results = clean_results.replace('</s>', '')
-            clean_results = clean_results.replace('<s>', '')
+            if task == 'ocr_with_region':
+                clean_results = str(results)       
+                cleaned_string = re.sub(r'</?s>|<[^>]*>', '\n',  clean_results)
+                clean_results = re.sub(r'\n+', '\n', cleaned_string)
+            else:
+                clean_results = str(results)       
+                clean_results = clean_results.replace('</s>', '')
+                clean_results = clean_results.replace('<s>', '')
 
             #return single string if only one image for compatibility with nodes that can't handle string lists
             if len(image) == 1:
