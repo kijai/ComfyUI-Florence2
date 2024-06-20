@@ -100,6 +100,7 @@ class Florence2Run:
                 "text_input": ("STRING", {"default": "", "multiline": True}),
                 "task": (
                     [ 
+                    'ocr'
                     'region_caption',
                     'dense_region_caption',
                     'caption',
@@ -138,6 +139,8 @@ class Florence2Run:
 
         if task == 'region_caption':
             prompt = "<OD>"
+        elif task == 'ocr':
+            prompt = '<OCR>'
         elif task == 'dense_region_caption':
             prompt = '<DENSE_REGION_CAPTION>'
         elif task == 'caption': 
