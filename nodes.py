@@ -51,7 +51,7 @@ class DownloadAndLoadFlorence2Model:
             "attention": (
                     [ 'flash_attention_2', 'sdpa', 'eager'],
                     {
-                    "default": 'flash_attention_2'
+                    "default": 'sdpa'
                     }),
 
             },
