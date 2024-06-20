@@ -102,11 +102,13 @@ class Florence2Run:
                     [ 
                     'region_caption',
                     'dense_region_caption',
+                    'region_proposal',
                     'caption',
                     'detailed_caption',
                     'more_detailed_caption',
                     'caption_to_phrase_grounding',
-                    'referring_expression_segmentation'
+                    'referring_expression_segmentation',
+                    'ocr'
 
                     ],
                    ),
@@ -116,6 +118,7 @@ class Florence2Run:
                 "keep_model_loaded": ("BOOLEAN", {"default": False}),
                 "max_new_tokens": ("INT", {"default": 1024, "min": 1, "max": 4096}),
                 "num_beams": ("INT", {"default": 3, "min": 1, "max": 64}),
+                "do_sample": ("BOOLEAN", {"default": True}),
             }
         }
     
@@ -124,7 +127,8 @@ class Florence2Run:
     FUNCTION = "encode"
     CATEGORY = "Florence2"
 
-    def encode(self, image, text_input, florence2_model, task, fill_mask, keep_model_loaded=False, num_beams=3, max_new_tokens=1024):
+    def encode(self, image, text_input, florence2_model, task, fill_mask, keep_model_loaded=False, 
+            num_beams=3, max_new_tokens=1024, do_sample=True):
         device = mm.get_torch_device()
         offload_device = mm.unet_offload_device()
         annotated_image_tensor = None
@@ -136,26 +140,24 @@ class Florence2Run:
         colormap = ['blue','orange','green','purple','brown','pink','gray','olive','cyan','red',
                     'lime','indigo','violet','aqua','magenta','coral','gold','tan','skyblue']
 
-        if task == 'region_caption':
-            prompt = "<OD>"
-        elif task == 'dense_region_caption':
-            prompt = '<DENSE_REGION_CAPTION>'
-        elif task == 'caption': 
-            prompt = '<CAPTION>'
-        elif task == 'detailed_caption': 
-            prompt = '<DETAILED_CAPTION>'
-        elif task == 'more_detailed_caption': 
-            prompt = '<MORE_DETAILED_CAPTION>'
-        elif task == 'caption_to_phrase_grounding': 
-            prompt = '<CAPTION_TO_PHRASE_GROUNDING>'
-        elif task == 'referring_expression_segmentation': 
-            prompt = '<REFERRING_EXPRESSION_SEGMENTATION>'
+        prompts = {
+            'region_caption': '<OD>',
+            'dense_region_caption': '<DENSE_REGION_CAPTION>',
+            'region_proposal': '<REGION_PROPOSAL>',
+            'caption': '<CAPTION>',
+            'detailed_caption': '<DETAILED_CAPTION>',
+            'more_detailed_caption': '<MORE_DETAILED_CAPTION>',
+            'caption_to_phrase_grounding': '<CAPTION_TO_PHRASE_GROUNDING>',
+            'referring_expression_segmentation': '<REFERRING_EXPRESSION_SEGMENTATION>',
+            'ocr': '<OCR>'
+        }
+        task_prompt = prompts.get(task, '<OD>')
 
         if (task!= 'referring_expression_segmentation' and task!= 'caption_to_phrase_grounding') and text_input:
-            raise ValueError("text_input is only supported for 'referring_expression_segmentation' and 'caption_to_phrase_grounding'")
+            raise ValueError("Text input (prompt) is only supported for 'referring_expression_segmentation' and 'caption_to_phrase_grounding'")
 
         if text_input is not None:
-            prompt = prompt + text_input
+            prompt = task_prompt + text_input
 
         image = image.permute(0, 3, 1, 2)
         
@@ -171,12 +173,11 @@ class Florence2Run:
                 input_ids=inputs["input_ids"],
                 pixel_values=inputs["pixel_values"],
                 max_new_tokens=max_new_tokens,
-                do_sample=False,
+                do_sample=do_sample,
                 num_beams=num_beams,
             )
 
             results = processor.batch_decode(generated_ids, skip_special_tokens=False)[0]
-
             # cleanup the special tokens from the final list
             clean_results = str(results)       
             clean_results = clean_results.replace('</s>', '')
@@ -188,14 +189,14 @@ class Florence2Run:
             else:
                 out_results.append(clean_results)
 
-            if task == 'region_caption' or task == 'dense_region_caption' or task == 'caption_to_phrase_grounding':
-                parsed_answer = processor.post_process_generation(results, task="<OD>", image_size=(image_pil.width, image_pil.height))
+            if task == 'region_caption' or task == 'dense_region_caption' or task == 'caption_to_phrase_grounding' or task == 'region_proposal':
+                parsed_answer = processor.post_process_generation(results, task=task_prompt, image_size=(image_pil.width, image_pil.height))
                 
                 fig, ax = plt.subplots(figsize=(image_pil.width / 100, image_pil.height / 100), dpi=100)
                 fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
                 ax.imshow(image_pil)
-                bboxes = parsed_answer['<OD>']['bboxes']
-                labels = parsed_answer['<OD>']['labels']
+                bboxes = parsed_answer[task_prompt]['bboxes']
+                labels = parsed_answer[task_prompt]['labels']
                 # Loop through the bounding boxes and labels and add them to the plot
                 for bbox, label in zip(bboxes, labels):
                     # Create a Rectangle patch
@@ -258,7 +259,7 @@ class Florence2Run:
                 plt.close(fig)
 
             elif task == 'referring_expression_segmentation':
-                parsed_answer = processor.post_process_generation(results, task="<REFERRING_EXPRESSION_SEGMENTATION>", image_size=(image_pil.width, image_pil.height))  
+                parsed_answer = processor.post_process_generation(results, task=task_prompt, image_size=(image_pil.width, image_pil.height))  
                 width, height = image_pil.size
                 # Create a new black image
                 mask_image = Image.new('RGB', (width, height), 'black')
