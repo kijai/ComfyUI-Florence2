@@ -77,7 +77,7 @@ class DownloadAndLoadFlorence2Model:
                             local_dir=model_path,
                             local_dir_use_symlinks=False)
             
-        print(f"using , {attention} for attention")
+        print(f"using {attention} for attention")
         with patch("transformers.dynamic_module_utils.get_imports", fixed_get_imports): #workaround for unnecessary flash_attn requirement
             model = AutoModelForCausalLM.from_pretrained(model_path, attn_implementation=attention, torch_dtype=dtype,trust_remote_code=True)
         processor = AutoProcessor.from_pretrained(model_path, trust_remote_code=True)
@@ -114,6 +114,8 @@ class Florence2Run:
             },
             "optional": {
                 "keep_model_loaded": ("BOOLEAN", {"default": False}),
+                "max_new_tokens": ("INT", {"default": 1024, "min": 1, "max": 4096}),
+                "num_beams": ("INT", {"default": 3, "min": 1, "max": 64}),
             }
         }
     
@@ -122,7 +124,7 @@ class Florence2Run:
     FUNCTION = "encode"
     CATEGORY = "Florence2"
 
-    def encode(self, image, text_input, florence2_model, task, fill_mask, keep_model_loaded=False):
+    def encode(self, image, text_input, florence2_model, task, fill_mask, keep_model_loaded=False, num_beams=3, max_new_tokens=1024):
         device = mm.get_torch_device()
         offload_device = mm.unet_offload_device()
         annotated_image_tensor = None
@@ -155,7 +157,7 @@ class Florence2Run:
         if text_input is not None:
             prompt = prompt + text_input
 
-        image = image.permute(0, 3, 1, 2).to(dtype)
+        image = image.permute(0, 3, 1, 2)
         
         out = []
         out_masks = []
@@ -168,9 +170,9 @@ class Florence2Run:
             generated_ids = model.generate(
                 input_ids=inputs["input_ids"],
                 pixel_values=inputs["pixel_values"],
-                max_new_tokens=1024,
+                max_new_tokens=max_new_tokens,
                 do_sample=False,
-                num_beams=3,
+                num_beams=num_beams,
             )
 
             results = processor.batch_decode(generated_ids, skip_special_tokens=False)[0]
