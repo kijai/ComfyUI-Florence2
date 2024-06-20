@@ -6,7 +6,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-from PIL import Image, ImageDraw 
+from PIL import Image, ImageDraw, ImageColor, ImageFont
 import random
 import numpy as np
 
@@ -79,7 +79,7 @@ class DownloadAndLoadFlorence2Model:
             
         print(f"using {attention} for attention")
         with patch("transformers.dynamic_module_utils.get_imports", fixed_get_imports): #workaround for unnecessary flash_attn requirement
-            model = AutoModelForCausalLM.from_pretrained(model_path, attn_implementation=attention, torch_dtype=dtype,trust_remote_code=True)
+            model = AutoModelForCausalLM.from_pretrained(model_path, attn_implementation=attention, device_map=device, torch_dtype=dtype,trust_remote_code=True)
         processor = AutoProcessor.from_pretrained(model_path, trust_remote_code=True)
         
         florence2_model = {
@@ -108,7 +108,8 @@ class Florence2Run:
                     'more_detailed_caption',
                     'caption_to_phrase_grounding',
                     'referring_expression_segmentation',
-                    'ocr'
+                    'ocr',
+                    'ocr_with_region'
 
                     ],
                    ),
@@ -137,8 +138,9 @@ class Florence2Run:
         model = florence2_model['model']
         dtype = florence2_model['dtype']
         model.to(device)
-        colormap = ['blue','orange','green','purple','brown','pink','gray','olive','cyan','red',
-                    'lime','indigo','violet','aqua','magenta','coral','gold','tan','skyblue']
+
+        colormap = ['blue','orange','green','purple','brown','pink','olive','cyan','red',
+                    'lime','indigo','violet','aqua','magenta','gold','tan','skyblue']
 
         prompts = {
             'region_caption': '<OD>',
@@ -149,7 +151,8 @@ class Florence2Run:
             'more_detailed_caption': '<MORE_DETAILED_CAPTION>',
             'caption_to_phrase_grounding': '<CAPTION_TO_PHRASE_GROUNDING>',
             'referring_expression_segmentation': '<REFERRING_EXPRESSION_SEGMENTATION>',
-            'ocr': '<OCR>'
+            'ocr': '<OCR>',
+            'ocr_with_region': '<OCR_WITH_REGION>'
         }
         task_prompt = prompts.get(task, '<OD>')
 
@@ -189,10 +192,11 @@ class Florence2Run:
             else:
                 out_results.append(clean_results)
 
-            if task == 'region_caption' or task == 'dense_region_caption' or task == 'caption_to_phrase_grounding' or task == 'region_proposal':
-                parsed_answer = processor.post_process_generation(results, task=task_prompt, image_size=(image_pil.width, image_pil.height))
-                
-                fig, ax = plt.subplots(figsize=(image_pil.width / 100, image_pil.height / 100), dpi=100)
+            W, H = image_pil.size
+            parsed_answer = processor.post_process_generation(results, task=task_prompt, image_size=(W, H))
+
+            if task == 'region_caption' or task == 'dense_region_caption' or task == 'caption_to_phrase_grounding' or task == 'region_proposal':           
+                fig, ax = plt.subplots(figsize=(W / 100, H / 100), dpi=100)
                 fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
                 ax.imshow(image_pil)
                 bboxes = parsed_answer[task_prompt]['bboxes']
@@ -220,14 +224,13 @@ class Florence2Run:
                     # Adjust text_x if text is going off the left or right edge
                     if text_x < 0:
                         text_x = 0
-                    elif text_x + text_width > image_pil.width:
-                        text_x = image_pil.width - text_width
+                    elif text_x + text_width > W:
+                        text_x = W - text_width
 
                     # Adjust text_y if text is going off the top edge
                     if text_y < 0:
                         text_y = bbox[3]  # Move text below the bottom-left of the bbox if it doesn't overlap with bbox
 
-                    
                     # Add the rectangle to the plot
                     ax.add_patch(rect)
                     facecolor = random.choice(colormap) if len(image) == 1 else 'red'
@@ -259,54 +262,42 @@ class Florence2Run:
                 plt.close(fig)
 
             elif task == 'referring_expression_segmentation':
-                parsed_answer = processor.post_process_generation(results, task=task_prompt, image_size=(image_pil.width, image_pil.height))  
-                width, height = image_pil.size
                 # Create a new black image
-                mask_image = Image.new('RGB', (width, height), 'black')
+                mask_image = Image.new('RGB', (W, H), 'black')
                 mask_draw = ImageDraw.Draw(mask_image)
-
-                draw = ImageDraw.Draw(image_pil)
-                    
-                # Set up scale factor if needed (use 1 if not scaling)  
-                scale = 1  
-                predictions = parsed_answer['<REFERRING_EXPRESSION_SEGMENTATION>']
+  
+                predictions = parsed_answer[task_prompt]
     
                 # Iterate over polygons and labels  
-                for polygons, label in zip(predictions['polygons'], predictions['labels']):  
-                    color = random.choice(colormap)  
-                    fill_color = random.choice(colormap) if fill_mask else None  
-                    
+                for polygons, label in zip(predictions['polygons'], predictions['labels']):
+                    color = random.choice(colormap)
                     for _polygon in polygons:  
                         _polygon = np.array(_polygon).reshape(-1, 2)
                         # Clamp polygon points to image boundaries
-                        _polygon = np.clip(_polygon, [0, 0], [width - 1, height - 1])
+                        _polygon = np.clip(_polygon, [0, 0], [W - 1, H - 1])
                         if len(_polygon) < 3:  
-                            print('Invalid polygon:', _polygon)  
+                            print('Invalid polygon:', _polygon)
                             continue  
                         
-                        _polygon = (_polygon * scale).reshape(-1).tolist()  
+                        _polygon = _polygon.reshape(-1).tolist()
                         
-                        # Draw the polygon  
-                        if fill_mask:  
-                            draw.polygon(_polygon, outline=color, fill=fill_color)  
-                        else:  
-                            draw.polygon(_polygon, outline=color)
-
-                        # Ensure the text is within image boundaries
-                        text_x, text_y = _polygon[0] + 8, _polygon[1] + 2
-                        text_x = min(text_x, width - 1)
-                        text_y = min(text_y, height - 1)
+                        # Draw the polygon
+                        if fill_mask:
+                            overlay = Image.new('RGBA', image_pil.size, (255, 255, 255, 0))
+                            image_pil = image_pil.convert('RGBA')
+                            draw = ImageDraw.Draw(overlay)
+                            color_with_opacity = ImageColor.getrgb(color) + (180,)
+                            draw.polygon(_polygon, outline=color, fill=color_with_opacity, width=3)
+                            image_pil = Image.alpha_composite(image_pil, overlay)
+                        else:
+                            draw = ImageDraw.Draw(image_pil)
+                            draw.polygon(_polygon, outline=color, width=3)
 
                         #draw mask
                         mask_draw.polygon(_polygon, outline="white", fill="white")
-                        mask_draw.text((text_x, text_y), label, fill="white")
                         
-                        # Draw the label text  
-                        draw.text((text_x, text_y), label, fill=color)  
-            
                 image_tensor = F.to_tensor(image_pil)
-                image_tensor = image_tensor[:3, :, :].unsqueeze(0).permute(0, 2, 3, 1).cpu().float()
-                
+                image_tensor = image_tensor[:3, :, :].unsqueeze(0).permute(0, 2, 3, 1).cpu().float() 
                 out.append(image_tensor)
 
                 mask_tensor = F.to_tensor(mask_image)
@@ -316,6 +307,26 @@ class Florence2Run:
                 mask_tensor = mask_tensor[:, :, :, 0]
                 out_masks.append(mask_tensor)
                 pbar.update(1)
+
+            elif task == 'ocr_with_region':
+                font = ImageFont.load_default().font_variant(size=24)
+                predictions = parsed_answer[task_prompt]
+                scale = 1
+                draw = ImageDraw.Draw(image_pil)
+                bboxes, labels = predictions['quad_boxes'], predictions['labels']
+                for box, label in zip(bboxes, labels):
+                    color = random.choice(colormap)
+                    new_box = (np.array(box) * scale).tolist()
+                    draw.polygon(new_box, width=3, outline=color)
+                    draw.text((new_box[0]+8, new_box[1]+2),
+                                "{}".format(label),
+                                align="right",
+                                font=font,
+                                fill=color)
+                image_tensor = F.to_tensor(image_pil)
+                image_tensor = image_tensor[:3, :, :].unsqueeze(0).permute(0, 2, 3, 1).cpu().float()
+                out.append(image_tensor)
+
         if len(out) > 0:
             out_tensor = torch.cat(out, dim=0)
         else:
