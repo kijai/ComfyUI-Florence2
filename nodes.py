@@ -206,14 +206,32 @@ class Florence2Run:
                         facecolor='none',
                         label=label
                     )
+                     # Calculate text width with a rough estimation
+                    text_width = len(label) * 6  # Adjust multiplier based on your font size
+                    text_height = 12  # Adjust based on your font size
+
+                    # Initial text position
+                    text_x = bbox[0]
+                    text_y = bbox[1] - text_height  # Position text above the top-left of the bbox
+
+                    # Adjust text_x if text is going off the left or right edge
+                    if text_x < 0:
+                        text_x = 0
+                    elif text_x + text_width > image_pil.width:
+                        text_x = image_pil.width - text_width
+
+                    # Adjust text_y if text is going off the top edge
+                    if text_y < 0:
+                        text_y = bbox[3]  # Move text below the bottom-left of the bbox if it doesn't overlap with bbox
+
                     
                     # Add the rectangle to the plot
                     ax.add_patch(rect)
                     facecolor = random.choice(colormap) if len(image) == 1 else 'red'
                     # Add the label
                     plt.text(
-                        bbox[0],
-                        bbox[1],
+                        text_x,
+                        text_y,
                         label,
                         color='white',
                         fontsize=12,
@@ -226,7 +244,7 @@ class Florence2Run:
                 ax.get_yaxis().set_major_locator(plt.NullLocator())
                 fig.canvas.draw() 
                 buf = io.BytesIO()
-                plt.savefig(buf, format='png', bbox_inches='tight', pad_inches=0)
+                plt.savefig(buf, format='png', pad_inches=0)
                 buf.seek(0)
                 annotated_image_pil = Image.open(buf)
 
