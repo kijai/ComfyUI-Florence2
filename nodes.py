@@ -211,8 +211,18 @@ class Florence2Run:
                 ax.imshow(image_pil)
                 bboxes = parsed_answer[task_prompt]['bboxes']
                 labels = parsed_answer[task_prompt]['labels']
+
+                if fill_mask:
+                    mask_layer = Image.new('RGB', image_pil.size, (0, 0, 0))
+                    mask_draw = ImageDraw.Draw(mask_layer)
+
                 # Loop through the bounding boxes and labels and add them to the plot
                 for bbox, label in zip(bboxes, labels):
+
+                    if fill_mask:
+                        # Draw a mask on the bbox area
+                        mask_color = (255, 255, 255)  # White with half opacity
+                        mask_draw.rectangle([bbox[0], bbox[1], bbox[2], bbox[3]], fill=mask_color)
                     # Create a Rectangle patch
                     rect = patches.Rectangle(
                         (bbox[0], bbox[1]),  # (x,y) - lower left corner
@@ -253,6 +263,15 @@ class Florence2Run:
                         fontsize=12,
                         bbox=dict(facecolor=facecolor, alpha=0.5)
                     )
+                if fill_mask:
+                    # Combine the original image with the mask layer
+                    mask_tensor = F.to_tensor(mask_layer)
+                    mask_tensor = mask_tensor.unsqueeze(0).permute(0, 2, 3, 1).cpu().float()
+                    mask_tensor = mask_tensor.mean(dim=0, keepdim=True)
+                    mask_tensor = mask_tensor.repeat(1, 1, 1, 3)
+                    mask_tensor = mask_tensor[:, :, :, 0]
+                    out_masks.append(mask_tensor)
+
                 # Remove axis and padding around the image
                 ax.axis('off')
                 ax.margins(0,0)
@@ -267,6 +286,8 @@ class Florence2Run:
                 annotated_image_tensor = F.to_tensor(annotated_image_pil)
                 out_tensor = annotated_image_tensor[:3, :, :].unsqueeze(0).permute(0, 2, 3, 1).cpu().float()
                 out.append(out_tensor)
+
+                
                 pbar.update(1)
     
                 plt.close(fig)
