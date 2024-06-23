@@ -161,7 +161,7 @@ class Florence2Run:
         if (task!= 'referring_expression_segmentation' and task!= 'caption_to_phrase_grounding') and text_input:
             raise ValueError("Text input (prompt) is only supported for 'referring_expression_segmentation' and 'caption_to_phrase_grounding'")
 
-        if text_input is not "":
+        if text_input != "":
             prompt = task_prompt + " " + text_input
         else:
             prompt = task_prompt
