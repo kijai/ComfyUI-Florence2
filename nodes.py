@@ -42,6 +42,7 @@ class DownloadAndLoadFlorence2Model:
                     'microsoft/Florence-2-base-ft',
                     'microsoft/Florence-2-large',
                     'microsoft/Florence-2-large-ft',
+                    'HuggingFaceM4/Florence-2-DocVQA'
                     ],
                     {
                     "default": 'microsoft/Florence-2-base'
@@ -111,8 +112,8 @@ class Florence2Run:
                     'caption_to_phrase_grounding',
                     'referring_expression_segmentation',
                     'ocr',
-                    'ocr_with_region'
-
+                    'ocr_with_region',
+                    'docvqa'
                     ],
                    ),
                 "fill_mask": ("BOOLEAN", {"default": True}),
@@ -154,12 +155,13 @@ class Florence2Run:
             'caption_to_phrase_grounding': '<CAPTION_TO_PHRASE_GROUNDING>',
             'referring_expression_segmentation': '<REFERRING_EXPRESSION_SEGMENTATION>',
             'ocr': '<OCR>',
-            'ocr_with_region': '<OCR_WITH_REGION>'
+            'ocr_with_region': '<OCR_WITH_REGION>',
+            'docvqa': '<DocVQA>'
         }
         task_prompt = prompts.get(task, '<OD>')
 
-        if (task!= 'referring_expression_segmentation' and task!= 'caption_to_phrase_grounding') and text_input:
-            raise ValueError("Text input (prompt) is only supported for 'referring_expression_segmentation' and 'caption_to_phrase_grounding'")
+        if (task not in ['referring_expression_segmentation', 'caption_to_phrase_grounding', 'docvqa']) and text_input:
+            raise ValueError("Text input (prompt) is only supported for 'referring_expression_segmentation', 'caption_to_phrase_grounding', and 'docvqa'")
 
         if text_input != "":
             prompt = task_prompt + " " + text_input
@@ -360,6 +362,32 @@ class Florence2Run:
                 image_tensor = F.to_tensor(image_pil)
                 image_tensor = image_tensor[:3, :, :].unsqueeze(0).permute(0, 2, 3, 1).cpu().float()
                 out.append(image_tensor)
+
+            elif task == 'docvqa':
+                if text_input == "":
+                    raise ValueError("Text input (prompt) is required for 'docvqa'")
+                prompt = "<DocVQA> " + text_input
+
+                inputs = processor(text=prompt, images=image_pil, return_tensors="pt", do_rescale=False).to(dtype).to(device)
+                generated_ids = model.generate(
+                    input_ids=inputs["input_ids"],
+                    pixel_values=inputs["pixel_values"],
+                    max_new_tokens=max_new_tokens,
+                    do_sample=do_sample,
+                    num_beams=num_beams,
+                )
+
+                results = processor.batch_decode(generated_ids, skip_special_tokens=False)[0]
+                clean_results = results.replace('</s>', '').replace('<s>', '')
+                
+                if len(image) == 1:
+                    out_results = clean_results
+                else:
+                    out_results.append(clean_results)
+                    
+                out.append(F.to_tensor(image_pil).unsqueeze(0).permute(0, 2, 3, 1).cpu().float())
+
+                pbar.update(1)
 
         if len(out) > 0:
             out_tensor = torch.cat(out, dim=0)
