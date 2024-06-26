@@ -340,7 +340,10 @@ class Florence2Run:
                 pbar.update(1)
 
             elif task == 'ocr_with_region':
-                font = ImageFont.load_default().font_variant(size=24)
+                try:
+                    font = ImageFont.load_default().font_variant(size=24)
+                except:
+                    font = ImageFont.load_default()
                 predictions = parsed_answer[task_prompt]
                 scale = 1
                 draw = ImageDraw.Draw(image_pil)
