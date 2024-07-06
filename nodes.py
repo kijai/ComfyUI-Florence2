@@ -123,6 +123,7 @@ class Florence2Run:
                 "max_new_tokens": ("INT", {"default": 1024, "min": 1, "max": 4096}),
                 "num_beams": ("INT", {"default": 3, "min": 1, "max": 64}),
                 "do_sample": ("BOOLEAN", {"default": True}),
+                "output_mask_indexes": ("STRING", {"default": ""}),
             }
         }
     
@@ -132,7 +133,7 @@ class Florence2Run:
     CATEGORY = "Florence2"
 
     def encode(self, image, text_input, florence2_model, task, fill_mask, keep_model_loaded=False, 
-            num_beams=3, max_new_tokens=1024, do_sample=True):
+            num_beams=3, max_new_tokens=1024, do_sample=True, output_mask_indexes=""):
         device = mm.get_torch_device()
         offload_device = mm.unet_offload_device()
         annotated_image_tensor = None
@@ -214,26 +215,21 @@ class Florence2Run:
                 bboxes = parsed_answer[task_prompt]['bboxes']
                 labels = parsed_answer[task_prompt]['labels']
 
-                if len(image) != 1:
+                # Determine mask indexes outside the loop
+                if output_mask_indexes != "":
+                    mask_indexes = [int(n) for n in output_mask_indexes.split(",")]
+                else:
+                    mask_indexes = list(range(len(bboxes)))
+
+                # Initialize mask_layer only if needed
+                if fill_mask:
                     mask_layer = Image.new('RGB', image_pil.size, (0, 0, 0))
                     mask_draw = ImageDraw.Draw(mask_layer)
-                
-                # Loop through the bounding boxes and labels and add them to the plot
-                for index, (bbox, label) in enumerate(zip(bboxes, labels)):
-                    if len(image) == 1:
-                        mask_layer = Image.new('RGB', image_pil.size, (0, 0, 0))
-                        mask_draw = ImageDraw.Draw(mask_layer)
 
-                    if fill_mask:
-                        # Draw a mask on the bbox area
-                        mask_color = (255, 255, 255)
-                        mask_draw.rectangle([bbox[0], bbox[1], bbox[2], bbox[3]], fill=mask_color)
-                        mask_tensor = F.to_tensor(mask_layer)
-                        mask_tensor = mask_tensor.unsqueeze(0).permute(0, 2, 3, 1).cpu().float()
-                        mask_tensor = mask_tensor.mean(dim=0, keepdim=True)
-                        mask_tensor = mask_tensor.repeat(1, 1, 1, 3)
-                        mask_tensor = mask_tensor[:, :, :, 0]
-                        out_masks.append(mask_tensor)
+                for index, (bbox, label) in enumerate(zip(bboxes, labels)):
+                    if fill_mask and index in mask_indexes:
+                        mask_draw.rectangle([bbox[0], bbox[1], bbox[2], bbox[3]], fill=(255, 255, 255))
+
 
                     # Modify the label to include the index
                     indexed_label = f"{index}.{label}"
@@ -279,7 +275,13 @@ class Florence2Run:
                         fontsize=12,
                         bbox=dict(facecolor=facecolor, alpha=0.5)
                     )
-                
+                if fill_mask:             
+                    mask_tensor = F.to_tensor(mask_layer)
+                    mask_tensor = mask_tensor.unsqueeze(0).permute(0, 2, 3, 1).cpu().float()
+                    mask_tensor = mask_tensor.mean(dim=0, keepdim=True)
+                    mask_tensor = mask_tensor.repeat(1, 1, 1, 3)
+                    mask_tensor = mask_tensor[:, :, :, 0]
+                    out_masks.append(mask_tensor)           
 
                 # Remove axis and padding around the image
                 ax.axis('off')
