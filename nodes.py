@@ -123,7 +123,7 @@ class Florence2Run:
                 "max_new_tokens": ("INT", {"default": 1024, "min": 1, "max": 4096}),
                 "num_beams": ("INT", {"default": 3, "min": 1, "max": 64}),
                 "do_sample": ("BOOLEAN", {"default": True}),
-                "output_mask_indexes": ("STRING", {"default": ""}),
+                "output_mask_select": ("STRING", {"default": ""}),
             }
         }
     
@@ -133,7 +133,7 @@ class Florence2Run:
     CATEGORY = "Florence2"
 
     def encode(self, image, text_input, florence2_model, task, fill_mask, keep_model_loaded=False, 
-            num_beams=3, max_new_tokens=1024, do_sample=True, output_mask_indexes=""):
+            num_beams=3, max_new_tokens=1024, do_sample=True, output_mask_select=""):
         device = mm.get_torch_device()
         offload_device = mm.unet_offload_device()
         annotated_image_tensor = None
@@ -215,11 +215,13 @@ class Florence2Run:
                 bboxes = parsed_answer[task_prompt]['bboxes']
                 labels = parsed_answer[task_prompt]['labels']
 
+                mask_indexes = []
                 # Determine mask indexes outside the loop
-                if output_mask_indexes != "":
-                    mask_indexes = [int(n) for n in output_mask_indexes.split(",")]
+                if output_mask_select != "":
+                    mask_indexes = [n for n in output_mask_select.split(",")]
+                    print(mask_indexes)
                 else:
-                    mask_indexes = list(range(len(bboxes)))
+                    mask_indexes = [str(i) for i in range(len(bboxes))]
 
                 # Initialize mask_layer only if needed
                 if fill_mask:
@@ -227,13 +229,16 @@ class Florence2Run:
                     mask_draw = ImageDraw.Draw(mask_layer)
 
                 for index, (bbox, label) in enumerate(zip(bboxes, labels)):
-                    if fill_mask and index in mask_indexes:
-                        mask_draw.rectangle([bbox[0], bbox[1], bbox[2], bbox[3]], fill=(255, 255, 255))
-
-
                     # Modify the label to include the index
                     indexed_label = f"{index}.{label}"
-                    print(indexed_label)
+                    
+                    if fill_mask:
+                        if str(index) in mask_indexes:
+                            print("match index:", str(index), "in mask_indexes:", mask_indexes)
+                            mask_draw.rectangle([bbox[0], bbox[1], bbox[2], bbox[3]], fill=(255, 255, 255))
+                        if label in mask_indexes:
+                            print("match label")
+                            mask_draw.rectangle([bbox[0], bbox[1], bbox[2], bbox[3]], fill=(255, 255, 255))
 
                     # Create a Rectangle patch
                     rect = patches.Rectangle(
