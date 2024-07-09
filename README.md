@@ -19,7 +19,7 @@ Install the dependencies in requirements.txt, transformers version 4.38.0 minimu
 
 or if you use portable (run this in ComfyUI_windows_portable -folder):
 
-`python_embeded\python.exe -m pip install -r ComfyUI\custom_nodes\ComfyUI-DynamiCrafterWrapper\requirements.txt`
+`python_embeded\python.exe -m pip install -r ComfyUI\custom_nodes\ComfyUI-Florence2\requirements.txt`
 
 ![image](https://github.com/kijai/ComfyUI-Florence2/assets/40791699/4d537ac7-5490-470f-92f5-3007da7b9cc7)
 ![image](https://github.com/kijai/ComfyUI-Florence2/assets/40791699/512357b7-39ee-43ee-bb63-7347b0a8d07d)
