@@ -425,3 +425,11 @@ class Florence2Run:
         
         return (out_tensor, out_mask_tensor, out_results, out_datas)
      
+NODE_CLASS_MAPPINGS = {
+    "DownloadAndLoadFlorence2Model": DownloadAndLoadFlorence2Model,
+    "Florence2Run": Florence2Run,
+}
+NODE_DISPLAY_NAME_MAPPINGS = {
+    "DownloadAndLoadFlorence2Model": "DownloadAndLoadFlorence2Model",
+    "Florence2Run": "Florence2Run",
+}
