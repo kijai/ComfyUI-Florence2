@@ -134,6 +134,7 @@ class Florence2Run:
     def encode(self, image, text_input, florence2_model, task, fill_mask, keep_model_loaded=False, 
             num_beams=3, max_new_tokens=1024, do_sample=True, output_mask_select=""):
         device = mm.get_torch_device()
+        _, height, width, _ = image.shape
         offload_device = mm.unet_offload_device()
         annotated_image_tensor = None
         mask_tensor = None
@@ -173,7 +174,7 @@ class Florence2Run:
         out = []
         out_masks = []
         out_results = []
-        out_datas = []
+        out_data = []
         pbar = ProgressBar(len(image))
         for img in image:
             image_pil = F.to_pil_image(img)
@@ -206,7 +207,7 @@ class Florence2Run:
                 out_results.append(clean_results)
 
             W, H = image_pil.size
-            data = []
+            
             parsed_answer = processor.post_process_generation(results, task=task_prompt, image_size=(W, H))
 
             if task == 'region_caption' or task == 'dense_region_caption' or task == 'caption_to_phrase_grounding' or task == 'region_proposal':           
@@ -367,7 +368,9 @@ class Florence2Run:
                 bboxes, labels = predictions['quad_boxes'], predictions['labels']
                 
                 for box, label in zip(bboxes, labels):
-                    data.append({"label": label, "box": box})
+                    scaled_box = [ v / (width if idx % 2 == 0 else height) for idx, v in enumerate(box)]
+                    out_data.append({"label": label, "box": scaled_box})
+                    
                     color = random.choice(colormap)
                     new_box = (np.array(box) * scale).tolist()
                     draw.polygon(new_box, width=3, outline=color)
@@ -406,9 +409,7 @@ class Florence2Run:
                 out.append(F.to_tensor(image_pil).unsqueeze(0).permute(0, 2, 3, 1).cpu().float())
 
                 pbar.update(1)
-            # data for task to out_datas
-            out_datas.append(data)
-
+            
         if len(out) > 0:
             out_tensor = torch.cat(out, dim=0)
         else:
@@ -423,7 +424,7 @@ class Florence2Run:
             model.to(offload_device)
             mm.soft_empty_cache()
         
-        return (out_tensor, out_mask_tensor, out_results, out_datas)
+        return (out_tensor, out_mask_tensor, out_results, out_data)
      
 NODE_CLASS_MAPPINGS = {
     "DownloadAndLoadFlorence2Model": DownloadAndLoadFlorence2Model,
