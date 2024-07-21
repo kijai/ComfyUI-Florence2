@@ -127,6 +127,7 @@ class Florence2Run:
             }
         }
     
+    OUTPUT_IS_LIST = (False, False, True,)
     RETURN_TYPES = ("IMAGE", "MASK", "STRING",)
     RETURN_NAMES =("image", "mask", "caption",)
     FUNCTION = "encode"
@@ -199,11 +200,7 @@ class Florence2Run:
                 clean_results = clean_results.replace('</s>', '')
                 clean_results = clean_results.replace('<s>', '')
 
-            #return single string if only one image for compatibility with nodes that can't handle string lists
-            if len(image) == 1:
-                out_results = clean_results
-            else:
-                out_results.append(clean_results)
+            out_results.append(clean_results)
 
             W, H = image_pil.size
             parsed_answer = processor.post_process_generation(results, task=task_prompt, image_size=(W, H))
@@ -394,10 +391,7 @@ class Florence2Run:
                 results = processor.batch_decode(generated_ids, skip_special_tokens=False)[0]
                 clean_results = results.replace('</s>', '').replace('<s>', '')
                 
-                if len(image) == 1:
-                    out_results = clean_results
-                else:
-                    out_results.append(clean_results)
+                out_results.append(clean_results)
                     
                 out.append(F.to_tensor(image_pil).unsqueeze(0).permute(0, 2, 3, 1).cpu().float())
 
