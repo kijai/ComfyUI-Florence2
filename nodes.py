@@ -129,6 +129,7 @@ class Florence2Run:
     
     RETURN_TYPES = ("IMAGE", "MASK", "STRING",)
     RETURN_NAMES =("image", "mask", "caption",)
+    OUTPUT_IS_LIST = (False, False, True,)
     FUNCTION = "encode"
     CATEGORY = "Florence2"
 
@@ -173,7 +174,7 @@ class Florence2Run:
         
         out = []
         out_masks = []
-        out_results = []
+        out_results: list[str] = []
         pbar = ProgressBar(len(image))
         for img in image:
             image_pil = F.to_pil_image(img)
@@ -201,7 +202,7 @@ class Florence2Run:
 
              #return single string if only one image for compatibility with nodes that can't handle string lists
             if len(image) == 1:
-                out_results = clean_results
+                out_results = [clean_results]
             else:
                 out_results.append(clean_results)
 
@@ -395,7 +396,7 @@ class Florence2Run:
                 clean_results = results.replace('</s>', '').replace('<s>', '')
                 
                 if len(image) == 1:
-                    out_results = clean_results
+                    out_results = [clean_results]
                 else:
                     out_results.append(clean_results)
                     
