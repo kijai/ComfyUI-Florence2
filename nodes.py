@@ -304,6 +304,8 @@ class Florence2Run:
                 annotated_image_tensor = F.to_tensor(annotated_image_pil)
                 out_tensor = annotated_image_tensor[:3, :, :].unsqueeze(0).permute(0, 2, 3, 1).cpu().float()
                 out.append(out_tensor)
+               
+                out_data.append(bboxes)
 
                 
                 pbar.update(1)
