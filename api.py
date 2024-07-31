@@ -30,16 +30,39 @@ async def get_tags(request):
     image, _ = nodes.LoadImage().load_image(
         os.path.join(request.query.get("subfolder", ""), request.query["filename"])
         + f" [{type}]")
-    model = request.query.get("model", "microsoft/Florence-2-base")
-    task = request.query.get("task", "caption")
     text_input = request.query.get("text_input", "")
     output_mask_select = request.query.get("output_mask_select", "")
     fill_mask = request.query.get("fill_mask", "True").lower() == "true"
     do_sample = request.query.get("do_sample", "True").lower() == "true"
     keep_model_loaded = request.query.get("keep_model_loaded", "True").lower() == "true"
-    num_beams = request.query.get("num_beams", 1)
-    max_new_tokens = request.query.get("max_new_tokens", 1024)
-    florence2_model, = DownloadAndLoadFlorence2Model().loadmodel(model=model, precision="fp16", attention="sdpa")
+    num_beams_str = request.query.get("num_beams", "1")
+    max_new_tokens_str = request.query.get("max_new_tokens", "1024")
+    try:
+        num_beams = int(num_beams_str)
+        max_new_tokens = int(max_new_tokens_str)
+    except ValueError:
+        num_beams = 1
+        max_new_tokens = 1024
+        print("Warning: Invalid value for num_beams or max_new_tokens. Using default values.")
+    task = request.query.get("task", "caption")
+    if task not in [
+        'region_caption', 'dense_region_caption', 'region_proposal',
+        'caption', 'detailed_caption', 'more_detailed_caption',
+        'caption_to_phrase_grounding', 'referring_expression_segmentation',
+        'ocr', 'ocr_with_region', 'docvqa'
+    ]:
+        return web.Response(status=400)
+    model = request.query.get("model", "microsoft/Florence-2-base")
+    precision = request.query.get("precision", "fp16")
+    if precision not in ['fp16', 'bf16', 'fp32']:
+        return web.Response(status=400)
+
+    attention = request.query.get("attention", "sdpa")
+    if attention not in ['flash_attention_2', 'sdpa', 'eager']:
+        return web.Response(status=400)
+
+    florence2_model, = DownloadAndLoadFlorence2Model().loadmodel(model=model, precision=precision, attention=attention)
+
     _, _, res, _ = Florence2Run().encode(
         image=image,
         text_input=text_input,
