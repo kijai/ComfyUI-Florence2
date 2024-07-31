@@ -1,18 +1,9 @@
 import os
 import nodes
+from .nodes import DownloadAndLoadFlorence2Model, Florence2Run
 from aiohttp import web
 from server import PromptServer
-
-
-def get_comfy_dir(subpath=None):
-    import inspect
-    dir = os.path.dirname(inspect.getfile(PromptServer))
-    if subpath is not None:
-        dir = os.path.join(dir, subpath)
-
-    dir = os.path.abspath(dir)
-
-    return dir
+import inspect
 
 
 @PromptServer.instance.routes.get("/florence2/tag")
@@ -23,8 +14,7 @@ async def get_tags(request):
     type = request.query.get("type", "input")
     if type not in ["output", "input", "temp"]:
         return web.Response(status=400)
-
-    target_dir = get_comfy_dir(type)
+    target_dir = os.path.abspath(os.path.join(os.path.dirname(inspect.getfile(PromptServer)), type))
     image_path = os.path.abspath(
         os.path.join(
             target_dir,
@@ -49,8 +39,8 @@ async def get_tags(request):
     keep_model_loaded = request.query.get("keep_model_loaded", True)
     num_beams = request.query.get("num_beams", 1)
     max_new_tokens = request.query.get("max_new_tokens", 1024)
-    florence2_model, = nodes.DownloadAndLoadFlorence2Model().loadmodel(model=model, precision="fp16", attention="sdpa")
-    _, _, res, _ = nodes.Florence2Run().encode(
+    florence2_model, = DownloadAndLoadFlorence2Model().loadmodel(model=model, precision="fp16", attention="sdpa")
+    _, _, res, _ = Florence2Run().encode(
         image=image,
         text_input=text_input,
         florence2_model=florence2_model,
