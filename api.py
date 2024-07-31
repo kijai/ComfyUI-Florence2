@@ -34,9 +34,9 @@ async def get_tags(request):
     task = request.query.get("task", "caption")
     text_input = request.query.get("text_input", "")
     output_mask_select = request.query.get("output_mask_select", "")
-    fill_mask = request.query.get("fill_mask", True)
-    do_sample = request.query.get("do_sample", True)
-    keep_model_loaded = request.query.get("keep_model_loaded", True)
+    fill_mask = request.query.get("fill_mask", True).lower() == "true"
+    do_sample = request.query.get("do_sample", True).lower() == "true"
+    keep_model_loaded = request.query.get("keep_model_loaded", True).lower() == "true"
     num_beams = request.query.get("num_beams", 1)
     max_new_tokens = request.query.get("max_new_tokens", 1024)
     florence2_model, = DownloadAndLoadFlorence2Model().loadmodel(model=model, precision="fp16", attention="sdpa")
