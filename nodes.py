@@ -211,7 +211,7 @@ class Florence2Run:
                 "num_beams": ("INT", {"default": 3, "min": 1, "max": 64}),
                 "do_sample": ("BOOLEAN", {"default": True}),
                 "output_mask_select": ("STRING", {"default": ""}),
-                "seed": ("INT", {"default": 1, "min": 1, "max": 4294967295}),
+                "seed": ("INT", {"default": 1, "min": 1, "max": 0xffffffffffffffff}),
             }
         }
     
@@ -219,6 +219,17 @@ class Florence2Run:
     RETURN_NAMES =("image", "mask", "caption", "data") 
     FUNCTION = "encode"
     CATEGORY = "Florence2"
+
+    def hash_seed(self, seed):
+        import hashlib
+        # Convert the seed to a string and then to bytes
+        seed_bytes = str(seed).encode('utf-8')
+        # Create a SHA-256 hash of the seed bytes
+        hash_object = hashlib.sha256(seed_bytes)
+        # Convert the hash to an integer
+        hashed_seed = int(hash_object.hexdigest(), 16)
+        # Ensure the hashed seed is within the acceptable range for set_seed
+        return hashed_seed % (2**32)
 
     def encode(self, image, text_input, florence2_model, task, fill_mask, keep_model_loaded=False, 
             num_beams=3, max_new_tokens=1024, do_sample=True, output_mask_select="", seed=None):
@@ -233,7 +244,7 @@ class Florence2Run:
         model.to(device)
         
         if seed:
-            set_seed(seed)
+            set_seed(self.hash_seed(seed))
 
         colormap = ['blue','orange','green','purple','brown','pink','olive','cyan','red',
                     'lime','indigo','violet','aqua','magenta','gold','tan','skyblue']
