@@ -44,7 +44,8 @@ class DownloadAndLoadFlorence2Model:
                     'microsoft/Florence-2-large-ft',
                     'HuggingFaceM4/Florence-2-DocVQA',
                     'thwri/CogFlorence-2.1-Large',
-                    "MiaoshouAI/Florence-2-base-PromptGen"
+                    'gokaygokay/Florence-2-SD3-Captioner',
+                    'MiaoshouAI/Florence-2-base-PromptGen'
                     ],
                     {
                     "default": 'microsoft/Florence-2-base'
