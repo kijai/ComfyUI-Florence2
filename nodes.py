@@ -10,6 +10,7 @@ from PIL import Image, ImageDraw, ImageColor, ImageFont
 import random
 import numpy as np
 import re
+from pathlib import Path
 
 #workaround for unnecessary flash_attn requirement
 from unittest.mock import patch
@@ -128,8 +129,53 @@ class DownloadAndLoadFlorence2Lora:
             snapshot_download(repo_id=model,
                             local_dir=model_path,
                             local_dir_use_symlinks=False)
-
         return (model_path,)
+    
+class Florence2ModelLoader:
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {"required": {
+            "model": ([item.name for item in Path(folder_paths.models_dir, "LLM").iterdir() if item.is_dir()],),
+            "precision": (['fp16','bf16','fp32'],),
+            "attention": (
+                    [ 'flash_attention_2', 'sdpa', 'eager'],
+                    {
+                    "default": 'sdpa'
+                    }),
+            },
+            "optional": {
+                "lora": ("PEFTLORA",),
+            }
+        }
+
+    RETURN_TYPES = ("FL2MODEL",)
+    RETURN_NAMES = ("florence2_model",)
+    FUNCTION = "loadmodel"
+    CATEGORY = "Florence2"
+
+    def loadmodel(self, model, precision, attention, lora=None):
+        device = mm.get_torch_device()
+        dtype = {"bf16": torch.bfloat16, "fp16": torch.float16, "fp32": torch.float32}[precision]
+        model_path = Path(folder_paths.models_dir, "LLM", model)
+        print(f"Loading model from {model_path}")
+        print(f"using {attention} for attention")
+        with patch("transformers.dynamic_module_utils.get_imports", fixed_get_imports): #workaround for unnecessary flash_attn requirement
+            model = AutoModelForCausalLM.from_pretrained(model_path, attn_implementation=attention, device_map=device, torch_dtype=dtype,trust_remote_code=True)
+        processor = AutoProcessor.from_pretrained(model_path, trust_remote_code=True)
+
+        if lora is not None:
+            from peft import PeftModel
+            adapter_name = lora
+            model = PeftModel.from_pretrained(model, adapter_name, trust_remote_code=True)
+        
+        florence2_model = {
+            'model': model, 
+            'processor': processor,
+            'dtype': dtype
+            }
+   
+        return (florence2_model,)
     
 class Florence2Run:
     @classmethod
@@ -470,10 +516,12 @@ class Florence2Run:
 NODE_CLASS_MAPPINGS = {
     "DownloadAndLoadFlorence2Model": DownloadAndLoadFlorence2Model,
     "DownloadAndLoadFlorence2Lora": DownloadAndLoadFlorence2Lora,
+    "Florence2ModelLoader": Florence2ModelLoader,
     "Florence2Run": Florence2Run,
 }
 NODE_DISPLAY_NAME_MAPPINGS = {
     "DownloadAndLoadFlorence2Model": "DownloadAndLoadFlorence2Model",
     "DownloadAndLoadFlorence2Lora": "DownloadAndLoadFlorence2Lora",
+    "Florence2ModelLoader": "Florence2ModelLoader",
     "Florence2Run": "Florence2Run",
 }
