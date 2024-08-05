@@ -43,7 +43,8 @@ class DownloadAndLoadFlorence2Model:
                     'microsoft/Florence-2-large',
                     'microsoft/Florence-2-large-ft',
                     'HuggingFaceM4/Florence-2-DocVQA',
-                    'thwri/CogFlorence-2.1-Large'
+                    'thwri/CogFlorence-2.1-Large',
+                    "MiaoshouAI/Florence-2-base-PromptGen"
                     ],
                     {
                     "default": 'microsoft/Florence-2-base'
@@ -197,7 +198,8 @@ class Florence2Run:
                     'referring_expression_segmentation',
                     'ocr',
                     'ocr_with_region',
-                    'docvqa'
+                    'docvqa',
+                    'prompt_gen'
                     ],
                    ),
                 "fill_mask": ("BOOLEAN", {"default": True}),
@@ -208,7 +210,7 @@ class Florence2Run:
                 "num_beams": ("INT", {"default": 3, "min": 1, "max": 64}),
                 "do_sample": ("BOOLEAN", {"default": True}),
                 "output_mask_select": ("STRING", {"default": ""}),
-                "seed": ("INT", {"default": 1, "min": 1, "max": 0xffffffffffffffff}),
+                "seed": ("INT", {"default": 1, "min": 1, "max": 4294967295}),
             }
         }
     
@@ -246,7 +248,8 @@ class Florence2Run:
             'referring_expression_segmentation': '<REFERRING_EXPRESSION_SEGMENTATION>',
             'ocr': '<OCR>',
             'ocr_with_region': '<OCR_WITH_REGION>',
-            'docvqa': '<DocVQA>'
+            'docvqa': '<DocVQA>',
+            'prompt_gen': '<GENERATE_PROMPT>',
         }
         task_prompt = prompts.get(task, '<OD>')
 
