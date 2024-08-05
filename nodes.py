@@ -41,7 +41,8 @@ class DownloadAndLoadFlorence2Model:
                     'microsoft/Florence-2-base-ft',
                     'microsoft/Florence-2-large',
                     'microsoft/Florence-2-large-ft',
-                    'HuggingFaceM4/Florence-2-DocVQA'
+                    'HuggingFaceM4/Florence-2-DocVQA',
+                    'thwri/CogFlorence-2.1-Large'
                     ],
                     {
                     "default": 'microsoft/Florence-2-base'
