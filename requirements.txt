@@ -2,3 +2,4 @@ transformers>=4.39.0
 matplotlib
 timm
 pillow >= 10.2.0
+aiohttp
