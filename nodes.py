@@ -56,8 +56,10 @@ class DownloadAndLoadFlorence2Model:
                     {
                     "default": 'sdpa'
                     }),
-
             },
+            "optional": {
+                "lora": ("PEFTLORA",),
+            }
         }
 
     RETURN_TYPES = ("FL2MODEL",)
@@ -65,7 +67,7 @@ class DownloadAndLoadFlorence2Model:
     FUNCTION = "loadmodel"
     CATEGORY = "Florence2"
 
-    def loadmodel(self, model, precision, attention):
+    def loadmodel(self, model, precision, attention, lora=None):
         device = mm.get_torch_device()
         offload_device = mm.unet_offload_device()
         dtype = {"bf16": torch.bfloat16, "fp16": torch.float16, "fp32": torch.float32}[precision]
@@ -74,7 +76,7 @@ class DownloadAndLoadFlorence2Model:
         model_path = os.path.join(folder_paths.models_dir, "LLM", model_name)
         
         if not os.path.exists(model_path):
-            print(f"Downloading Lumina model to: {model_path}")
+            print(f"Downloading Florence2 model to: {model_path}")
             from huggingface_hub import snapshot_download
             snapshot_download(repo_id=model,
                             local_dir=model_path,
@@ -84,6 +86,11 @@ class DownloadAndLoadFlorence2Model:
         with patch("transformers.dynamic_module_utils.get_imports", fixed_get_imports): #workaround for unnecessary flash_attn requirement
             model = AutoModelForCausalLM.from_pretrained(model_path, attn_implementation=attention, device_map=device, torch_dtype=dtype,trust_remote_code=True)
         processor = AutoProcessor.from_pretrained(model_path, trust_remote_code=True)
+
+        if lora is not None:
+            from peft import PeftModel
+            adapter_name = lora
+            model = PeftModel.from_pretrained(model, adapter_name, trust_remote_code=True)
         
         florence2_model = {
             'model': model, 
@@ -92,6 +99,37 @@ class DownloadAndLoadFlorence2Model:
             }
 
         return (florence2_model,)
+    
+class DownloadAndLoadFlorence2Lora:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {"required": {
+            "model": (
+                    [ 
+                    'NikshepShetty/Florence-2-pixelprose',
+                    ],
+                  ),            
+            },
+          
+        }
+
+    RETURN_TYPES = ("PEFTLORA",)
+    RETURN_NAMES = ("lora",)
+    FUNCTION = "loadmodel"
+    CATEGORY = "Florence2"
+
+    def loadmodel(self, model):
+        model_name = model.rsplit('/', 1)[-1]
+        model_path = os.path.join(folder_paths.models_dir, "LLM", model_name)
+        
+        if not os.path.exists(model_path):
+            print(f"Downloading Florence2 lora model to: {model_path}")
+            from huggingface_hub import snapshot_download
+            snapshot_download(repo_id=model,
+                            local_dir=model_path,
+                            local_dir_use_symlinks=False)
+
+        return (model_path,)
     
 class Florence2Run:
     @classmethod
@@ -431,9 +469,11 @@ class Florence2Run:
      
 NODE_CLASS_MAPPINGS = {
     "DownloadAndLoadFlorence2Model": DownloadAndLoadFlorence2Model,
+    "DownloadAndLoadFlorence2Lora": DownloadAndLoadFlorence2Lora,
     "Florence2Run": Florence2Run,
 }
 NODE_DISPLAY_NAME_MAPPINGS = {
     "DownloadAndLoadFlorence2Model": "DownloadAndLoadFlorence2Model",
+    "DownloadAndLoadFlorence2Lora": "DownloadAndLoadFlorence2Lora",
     "Florence2Run": "Florence2Run",
 }
