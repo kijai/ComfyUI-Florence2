@@ -30,7 +30,7 @@ import folder_paths
 
 script_directory = os.path.dirname(os.path.abspath(__file__))
 
-from transformers import AutoModelForCausalLM, AutoProcessor
+from transformers import AutoModelForCausalLM, AutoProcessor, set_seed
 
 class DownloadAndLoadFlorence2Model:
     @classmethod
@@ -208,6 +208,7 @@ class Florence2Run:
                 "num_beams": ("INT", {"default": 3, "min": 1, "max": 64}),
                 "do_sample": ("BOOLEAN", {"default": True}),
                 "output_mask_select": ("STRING", {"default": ""}),
+                "seed": ("INT", {"default": 1, "min": 1, "max": 0xffffffffffffffff}),
             }
         }
     
@@ -217,7 +218,7 @@ class Florence2Run:
     CATEGORY = "Florence2"
 
     def encode(self, image, text_input, florence2_model, task, fill_mask, keep_model_loaded=False, 
-            num_beams=3, max_new_tokens=1024, do_sample=True, output_mask_select=""):
+            num_beams=3, max_new_tokens=1024, do_sample=True, output_mask_select="", seed=None):
         device = mm.get_torch_device()
         _, height, width, _ = image.shape
         offload_device = mm.unet_offload_device()
@@ -227,6 +228,9 @@ class Florence2Run:
         model = florence2_model['model']
         dtype = florence2_model['dtype']
         model.to(device)
+        
+        if seed:
+            set_seed(seed)
 
         colormap = ['blue','orange','green','purple','brown','pink','olive','cyan','red',
                     'lime','indigo','violet','aqua','magenta','gold','tan','skyblue']
