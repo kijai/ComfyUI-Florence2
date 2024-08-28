@@ -302,8 +302,8 @@ class Florence2Run:
                 clean_results = re.sub(r'\n+', '\n', cleaned_string)
             else:
                 clean_results = str(results)       
-                clean_results = clean_results.replace('</?s>|<[^>]*>', '')
-                clean_results = clean_results.replace(' ', '')
+                clean_results = clean_results.replace('</s>', '')
+                clean_results = clean_results.replace('<s>', '')
 
              #return single string if only one image for compatibility with nodes that can't handle string lists
             if len(image) == 1:
@@ -534,7 +534,7 @@ class Florence2Run:
                 )
 
                 results = processor.batch_decode(generated_ids, skip_special_tokens=False)[0]
-                clean_results = results.replace('</?s>|<[^>]*>', '').replace(' ', '')
+                clean_results = results.replace('</s>', '').replace('<s>', '')
                 
                 if len(image) == 1:
                     out_results = clean_results
