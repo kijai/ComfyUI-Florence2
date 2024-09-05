@@ -475,26 +475,54 @@ class Florence2Run:
                     font = ImageFont.load_default()
                 predictions = parsed_answer[task_prompt]
                 scale = 1
-                draw = ImageDraw.Draw(image_pil)
+                image_pil = image_pil.convert('RGBA')
+                overlay = Image.new('RGBA', image_pil.size, (255, 255, 255, 0))
+                draw = ImageDraw.Draw(overlay)
                 bboxes, labels = predictions['quad_boxes'], predictions['labels']
                 
+                # Create a new black image for the mask
+                mask_image = Image.new('RGB', (W, H), 'black')
+                mask_draw = ImageDraw.Draw(mask_image)
+                
                 for box, label in zip(bboxes, labels):
-                    scaled_box = [ v / (width if idx % 2 == 0 else height) for idx, v in enumerate(box)]
+                    scaled_box = [v / (width if idx % 2 == 0 else height) for idx, v in enumerate(box)]
                     out_data.append({"label": label, "box": scaled_box})
                     
                     color = random.choice(colormap)
                     new_box = (np.array(box) * scale).tolist()
-                    draw.polygon(new_box, width=3, outline=color)
-                    draw.text((new_box[0]+8, new_box[1]+2),
-                                "{}".format(label),
-                                align="right",
-                                font=font,
-                                fill=color)
                     
+                    if fill_mask:
+                        color_with_opacity = ImageColor.getrgb(color) + (180,)
+                        draw.polygon(new_box, outline=color, fill=color_with_opacity, width=3)
+                    else:
+                        draw.polygon(new_box, outline=color, width=3)
+                    
+                    draw.text((new_box[0]+8, new_box[1]+2),
+                              "{}".format(label),
+                              align="right",
+                              font=font,
+                              fill=color)
+                    
+                    # Draw the mask
+                    mask_draw.polygon(new_box, outline="white", fill="white")
+                
+                image_pil = Image.alpha_composite(image_pil, overlay)
+                image_pil = image_pil.convert('RGB')
+                
                 image_tensor = F.to_tensor(image_pil)
                 image_tensor = image_tensor[:3, :, :].unsqueeze(0).permute(0, 2, 3, 1).cpu().float()
                 out.append(image_tensor)
 
+                # Process the mask
+                mask_tensor = F.to_tensor(mask_image)
+                mask_tensor = mask_tensor.unsqueeze(0).permute(0, 2, 3, 1).cpu().float()
+                mask_tensor = mask_tensor.mean(dim=0, keepdim=True)
+                mask_tensor = mask_tensor.repeat(1, 1, 1, 3)
+                mask_tensor = mask_tensor[:, :, :, 0]
+                out_masks.append(mask_tensor)
+
+                pbar.update(1)
+            
             elif task == 'docvqa':
                 if text_input == "":
                     raise ValueError("Text input (prompt) is required for 'docvqa'")
