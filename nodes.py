@@ -205,7 +205,8 @@ class Florence2Run:
                     'ocr',
                     'ocr_with_region',
                     'docvqa',
-                    'prompt_gen'
+                    'prompt_gen_tags',
+                    'prompt_gen_mixed_caption'
                     ],
                    ),
                 "fill_mask": ("BOOLEAN", {"default": True}),
