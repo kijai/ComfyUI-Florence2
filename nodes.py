@@ -50,7 +50,7 @@ class DownloadAndLoadFlorence2Model:
                     'thwri/CogFlorence-2.1-Large',
                     'thwri/CogFlorence-2.2-Large',
                     'gokaygokay/Florence-2-SD3-Captioner',
-                    'MiaoshouAI/Florence-2-base-PromptGen'
+                    'MiaoshouAI/Florence-2-base-PromptGen-v1.5'
                     ],
                     {
                     "default": 'microsoft/Florence-2-base'
@@ -266,7 +266,8 @@ class Florence2Run:
             'ocr': '<OCR>',
             'ocr_with_region': '<OCR_WITH_REGION>',
             'docvqa': '<DocVQA>',
-            'prompt_gen': '<GENERATE_PROMPT>',
+            'prompt_gen_tags': '<GENERATE_TAGS>',
+            'prompt_gen_mixed_caption': '<MIXED_CAPTION>'
         }
         task_prompt = prompts.get(task, '<OD>')
 
