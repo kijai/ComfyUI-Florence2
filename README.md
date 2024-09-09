@@ -24,13 +24,24 @@ or if you use portable (run this in ComfyUI_windows_portable -folder):
 ![image](https://github.com/kijai/ComfyUI-Florence2/assets/40791699/4d537ac7-5490-470f-92f5-3007da7b9cc7)
 ![image](https://github.com/kijai/ComfyUI-Florence2/assets/40791699/512357b7-39ee-43ee-bb63-7347b0a8d07d)
 
-Supports the following models, which are automatically downloaded to `ComfyUI/LLM`:
+Supports most Florence2 models, which can be automatically downloaded with the `DownloadAndLoadFlorence2Model` to `ComfyUI/models/LLM`:
+
+Official:
 
 https://huggingface.co/microsoft/Florence-2-base
 https://huggingface.co/microsoft/Florence-2-base-ft
 https://huggingface.co/microsoft/Florence-2-large
 https://huggingface.co/microsoft/Florence-2-large-ft
 https://huggingface.co/HuggingFaceM4/Florence-2-DocVQA
+
+Tested finetunes:
+
+https://huggingface.co/MiaoshouAI/Florence-2-base-PromptGen-v1.5
+https://huggingface.co/MiaoshouAI/Florence-2-large-PromptGen-v1.5
+https://huggingface.co/thwri/CogFlorence-2.2-Large
+https://huggingface.co/HuggingFaceM4/Florence-2-DocVQA
+https://huggingface.co/gokaygokay/Florence-2-SD3-Captioner
+https://huggingface.co/NikshepShetty/Florence-2-pixelpros
 
 ## Using DocVQA
 

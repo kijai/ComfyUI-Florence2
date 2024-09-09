@@ -50,7 +50,8 @@ class DownloadAndLoadFlorence2Model:
                     'thwri/CogFlorence-2.1-Large',
                     'thwri/CogFlorence-2.2-Large',
                     'gokaygokay/Florence-2-SD3-Captioner',
-                    'MiaoshouAI/Florence-2-base-PromptGen-v1.5'
+                    'MiaoshouAI/Florence-2-base-PromptGen-v1.5',
+                    'MiaoshouAI/Florence-2-large-PromptGen-v1.5'
                     ],
                     {
                     "default": 'microsoft/Florence-2-base'
@@ -143,7 +144,7 @@ class Florence2ModelLoader:
     @classmethod
     def INPUT_TYPES(s):
         return {"required": {
-            "model": ([item.name for item in Path(folder_paths.models_dir, "LLM").iterdir() if item.is_dir()], {"tooltip": "models are expected to be in Comfyui/LLM folder"}),
+            "model": ([item.name for item in Path(folder_paths.models_dir, "LLM").iterdir() if item.is_dir()], {"tooltip": "models are expected to be in Comfyui/models/LLM folder"}),
             "precision": (['fp16','bf16','fp32'],),
             "attention": (
                     [ 'flash_attention_2', 'sdpa', 'eager'],
