@@ -50,6 +50,8 @@ https://huggingface.co/HuggingFaceM4/Florence-2-DocVQA
 
 https://huggingface.co/gokaygokay/Florence-2-SD3-Captioner
 
+https://huggingface.co/gokaygokay/Florence-2-Flux-Large
+
 https://huggingface.co/NikshepShetty/Florence-2-pixelpros
 
 ## Using DocVQA
