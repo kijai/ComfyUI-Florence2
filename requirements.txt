@@ -3,3 +3,4 @@ matplotlib
 timm
 pillow >= 10.2.0
 peft
+accelerate
