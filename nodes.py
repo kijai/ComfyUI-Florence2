@@ -185,6 +185,49 @@ class Florence2ModelLoader:
             }
    
         return (florence2_model,)
+
+class Florence2ExtraModelLoader:
+
+    @classmethod
+    def INPUT_TYPES(s):
+        paths = []
+        for search_path in folder_paths.get_folder_paths("florence2"):
+            if os.path.exists(search_path):
+                for root, subdir, files in os.walk(search_path, followlinks=True):
+                    if "modeling_florence2.py" in files:
+                        paths.append(os.path.relpath(root, start=search_path))
+
+        return {"required": {"model_path": (paths,), }}
+
+    RETURN_TYPES = ("FL2MODEL",)
+    RETURN_NAMES = ("florence2_model",)
+    FUNCTION = "loadmodel"
+    CATEGORY = "Florence2"
+
+    def loadmodel(self, model_path):
+        device = mm.get_torch_device()
+        for search_path in folder_paths.get_folder_paths("florence2"):
+            if os.path.exists(search_path):
+                path = os.path.join(search_path, model_path)
+                if os.path.exists(path):
+                    model_path = path
+                    break
+        print(f"Loading model from {model_path}")
+        torch_dtype = torch.float16 if torch.cuda.is_available() else torch.float32
+        with patch(
+            "transformers.dynamic_module_utils.get_imports", fixed_get_imports
+        ):  # workaround for unnecessary flash_attn requirement
+            model = AutoModelForCausalLM.from_pretrained(
+                model_path,
+                device_map=device,
+                torch_dtype=torch_dtype,
+                trust_remote_code=True,
+            )
+        processor = AutoProcessor.from_pretrained(model_path, trust_remote_code=True)
+
+        florence2_model = {"model": model, "processor": processor, "dtype": torch_dtype}
+
+        return (florence2_model,)
     
 class Florence2Run:
     @classmethod
@@ -574,10 +617,12 @@ NODE_CLASS_MAPPINGS = {
     "DownloadAndLoadFlorence2Lora": DownloadAndLoadFlorence2Lora,
     "Florence2ModelLoader": Florence2ModelLoader,
     "Florence2Run": Florence2Run,
+    "Florence2ExtraModelLoader": Florence2ExtraModelLoader
 }
 NODE_DISPLAY_NAME_MAPPINGS = {
     "DownloadAndLoadFlorence2Model": "DownloadAndLoadFlorence2Model",
     "DownloadAndLoadFlorence2Lora": "DownloadAndLoadFlorence2Lora",
     "Florence2ModelLoader": "Florence2ModelLoader",
     "Florence2Run": "Florence2Run",
+    "Florence2ExtraModelLoader": "Load Florence2 Model"
 }
