@@ -3,7 +3,7 @@ import torchvision.transforms.functional as F
 import io
 import os
 import matplotlib
-matplotlib.use('Agg')   
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from PIL import Image, ImageDraw, ImageColor, ImageFont
@@ -11,12 +11,13 @@ import random
 import numpy as np
 import re
 from pathlib import Path
+from typing import Union
 
 #workaround for unnecessary flash_attn requirement
 from unittest.mock import patch
 from transformers.dynamic_module_utils import get_imports
 
-def fixed_get_imports(filename: str | os.PathLike) -> list[str]:
+def fixed_get_imports(filename: Union[str, os.PathLike]) -> list[str]:
     try:
         if not str(filename).endswith("modeling_florence2.py"):
             return get_imports(filename)
@@ -41,7 +42,7 @@ class DownloadAndLoadFlorence2Model:
     def INPUT_TYPES(s):
         return {"required": {
             "model": (
-                    [ 
+                    [
                     'microsoft/Florence-2-base',
                     'microsoft/Florence-2-base-ft',
                     'microsoft/Florence-2-large',
@@ -86,14 +87,14 @@ class DownloadAndLoadFlorence2Model:
 
         model_name = model.rsplit('/', 1)[-1]
         model_path = os.path.join(folder_paths.models_dir, "LLM", model_name)
-        
+
         if not os.path.exists(model_path):
             print(f"Downloading Florence2 model to: {model_path}")
             from huggingface_hub import snapshot_download
             snapshot_download(repo_id=model,
                             local_dir=model_path,
                             local_dir_use_symlinks=False)
-            
+
         print(f"using {attention} for attention")
         with patch("transformers.dynamic_module_utils.get_imports", fixed_get_imports): #workaround for unnecessary flash_attn requirement
             model = AutoModelForCausalLM.from_pretrained(model_path, attn_implementation=attention, device_map=device, torch_dtype=dtype,trust_remote_code=True)
@@ -103,26 +104,26 @@ class DownloadAndLoadFlorence2Model:
             from peft import PeftModel
             adapter_name = lora
             model = PeftModel.from_pretrained(model, adapter_name, trust_remote_code=True)
-        
+
         florence2_model = {
-            'model': model, 
+            'model': model,
             'processor': processor,
             'dtype': dtype
             }
 
         return (florence2_model,)
-    
+
 class DownloadAndLoadFlorence2Lora:
     @classmethod
     def INPUT_TYPES(s):
         return {"required": {
             "model": (
-                    [ 
+                    [
                     'NikshepShetty/Florence-2-pixelprose',
                     ],
-                  ),            
+                  ),
             },
-          
+
         }
 
     RETURN_TYPES = ("PEFTLORA",)
@@ -133,7 +134,7 @@ class DownloadAndLoadFlorence2Lora:
     def loadmodel(self, model):
         model_name = model.rsplit('/', 1)[-1]
         model_path = os.path.join(folder_paths.models_dir, "LLM", model_name)
-        
+
         if not os.path.exists(model_path):
             print(f"Downloading Florence2 lora model to: {model_path}")
             from huggingface_hub import snapshot_download
@@ -141,7 +142,7 @@ class DownloadAndLoadFlorence2Lora:
                             local_dir=model_path,
                             local_dir_use_symlinks=False)
         return (model_path,)
-    
+
 class Florence2ModelLoader:
 
     @classmethod
@@ -179,15 +180,15 @@ class Florence2ModelLoader:
             from peft import PeftModel
             adapter_name = lora
             model = PeftModel.from_pretrained(model, adapter_name, trust_remote_code=True)
-        
+
         florence2_model = {
-            'model': model, 
+            'model': model,
             'processor': processor,
             'dtype': dtype
             }
-   
+
         return (florence2_model,)
-    
+
 class Florence2Run:
     @classmethod
     def INPUT_TYPES(s):
@@ -197,7 +198,7 @@ class Florence2Run:
                 "florence2_model": ("FL2MODEL", ),
                 "text_input": ("STRING", {"default": "", "multiline": True}),
                 "task": (
-                    [ 
+                    [
                     'region_caption',
                     'dense_region_caption',
                     'region_proposal',
@@ -226,9 +227,9 @@ class Florence2Run:
                 "seed": ("INT", {"default": 1, "min": 1, "max": 0xffffffffffffffff}),
             }
         }
-    
+
     RETURN_TYPES = ("IMAGE", "MASK", "STRING", "JSON")
-    RETURN_NAMES =("image", "mask", "caption", "data") 
+    RETURN_NAMES =("image", "mask", "caption", "data")
     FUNCTION = "encode"
     CATEGORY = "Florence2"
 
@@ -243,7 +244,7 @@ class Florence2Run:
         # Ensure the hashed seed is within the acceptable range for set_seed
         return hashed_seed % (2**32)
 
-    def encode(self, image, text_input, florence2_model, task, fill_mask, keep_model_loaded=False, 
+    def encode(self, image, text_input, florence2_model, task, fill_mask, keep_model_loaded=False,
             num_beams=3, max_new_tokens=1024, do_sample=True, output_mask_select="", seed=None):
         device = mm.get_torch_device()
         _, height, width, _ = image.shape
@@ -254,7 +255,7 @@ class Florence2Run:
         model = florence2_model['model']
         dtype = florence2_model['dtype']
         model.to(device)
-        
+
         if seed:
             set_seed(self.hash_seed(seed))
 
@@ -289,7 +290,7 @@ class Florence2Run:
             prompt = task_prompt
 
         image = image.permute(0, 3, 1, 2)
-        
+
         out = []
         out_masks = []
         out_results = []
@@ -311,11 +312,11 @@ class Florence2Run:
             print(results)
             # cleanup the special tokens from the final list
             if task == 'ocr_with_region':
-                clean_results = str(results)       
+                clean_results = str(results)
                 cleaned_string = re.sub(r'</?s>|<[^>]*>', '\n',  clean_results)
                 clean_results = re.sub(r'\n+', '\n', cleaned_string)
             else:
-                clean_results = str(results)       
+                clean_results = str(results)
                 clean_results = clean_results.replace('</s>', '')
                 clean_results = clean_results.replace('<s>', '')
 
@@ -326,10 +327,10 @@ class Florence2Run:
                 out_results.append(clean_results)
 
             W, H = image_pil.size
-            
+
             parsed_answer = processor.post_process_generation(results, task=task_prompt, image_size=(W, H))
 
-            if task == 'region_caption' or task == 'dense_region_caption' or task == 'caption_to_phrase_grounding' or task == 'region_proposal':           
+            if task == 'region_caption' or task == 'dense_region_caption' or task == 'caption_to_phrase_grounding' or task == 'region_proposal':
                 fig, ax = plt.subplots(figsize=(W / 100, H / 100), dpi=100)
                 fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
                 ax.imshow(image_pil)
@@ -352,7 +353,7 @@ class Florence2Run:
                 for index, (bbox, label) in enumerate(zip(bboxes, labels)):
                     # Modify the label to include the index
                     indexed_label = f"{index}.{label}"
-                    
+
                     if fill_mask:
                         if str(index) in mask_indexes:
                             print("match index:", str(index), "in mask_indexes:", mask_indexes)
@@ -401,20 +402,20 @@ class Florence2Run:
                         fontsize=12,
                         bbox=dict(facecolor=facecolor, alpha=0.5)
                     )
-                if fill_mask:             
+                if fill_mask:
                     mask_tensor = F.to_tensor(mask_layer)
                     mask_tensor = mask_tensor.unsqueeze(0).permute(0, 2, 3, 1).cpu().float()
                     mask_tensor = mask_tensor.mean(dim=0, keepdim=True)
                     mask_tensor = mask_tensor.repeat(1, 1, 1, 3)
                     mask_tensor = mask_tensor[:, :, :, 0]
-                    out_masks.append(mask_tensor)           
+                    out_masks.append(mask_tensor)
 
                 # Remove axis and padding around the image
                 ax.axis('off')
                 ax.margins(0,0)
                 ax.get_xaxis().set_major_locator(plt.NullLocator())
                 ax.get_yaxis().set_major_locator(plt.NullLocator())
-                fig.canvas.draw() 
+                fig.canvas.draw()
                 buf = io.BytesIO()
                 plt.savefig(buf, format='png', pad_inches=0)
                 buf.seek(0)
@@ -423,34 +424,34 @@ class Florence2Run:
                 annotated_image_tensor = F.to_tensor(annotated_image_pil)
                 out_tensor = annotated_image_tensor[:3, :, :].unsqueeze(0).permute(0, 2, 3, 1).cpu().float()
                 out.append(out_tensor)
-               
+
                 out_data.append(bboxes)
 
-                
+
                 pbar.update(1)
-    
+
                 plt.close(fig)
 
             elif task == 'referring_expression_segmentation':
                 # Create a new black image
                 mask_image = Image.new('RGB', (W, H), 'black')
                 mask_draw = ImageDraw.Draw(mask_image)
-  
+
                 predictions = parsed_answer[task_prompt]
-    
-                # Iterate over polygons and labels  
+
+                # Iterate over polygons and labels
                 for polygons, label in zip(predictions['polygons'], predictions['labels']):
                     color = random.choice(colormap)
-                    for _polygon in polygons:  
+                    for _polygon in polygons:
                         _polygon = np.array(_polygon).reshape(-1, 2)
                         # Clamp polygon points to image boundaries
                         _polygon = np.clip(_polygon, [0, 0], [W - 1, H - 1])
-                        if len(_polygon) < 3:  
+                        if len(_polygon) < 3:
                             print('Invalid polygon:', _polygon)
-                            continue  
-                        
+                            continue
+
                         _polygon = _polygon.reshape(-1).tolist()
-                        
+
                         # Draw the polygon
                         if fill_mask:
                             overlay = Image.new('RGBA', image_pil.size, (255, 255, 255, 0))
@@ -465,9 +466,9 @@ class Florence2Run:
 
                         #draw mask
                         mask_draw.polygon(_polygon, outline="white", fill="white")
-                        
+
                 image_tensor = F.to_tensor(image_pil)
-                image_tensor = image_tensor[:3, :, :].unsqueeze(0).permute(0, 2, 3, 1).cpu().float() 
+                image_tensor = image_tensor[:3, :, :].unsqueeze(0).permute(0, 2, 3, 1).cpu().float()
                 out.append(image_tensor)
 
                 mask_tensor = F.to_tensor(mask_image)
@@ -489,36 +490,36 @@ class Florence2Run:
                 overlay = Image.new('RGBA', image_pil.size, (255, 255, 255, 0))
                 draw = ImageDraw.Draw(overlay)
                 bboxes, labels = predictions['quad_boxes'], predictions['labels']
-                
+
                 # Create a new black image for the mask
                 mask_image = Image.new('RGB', (W, H), 'black')
                 mask_draw = ImageDraw.Draw(mask_image)
-                
+
                 for box, label in zip(bboxes, labels):
                     scaled_box = [v / (width if idx % 2 == 0 else height) for idx, v in enumerate(box)]
                     out_data.append({"label": label, "box": scaled_box})
-                    
+
                     color = random.choice(colormap)
                     new_box = (np.array(box) * scale).tolist()
-                    
+
                     if fill_mask:
                         color_with_opacity = ImageColor.getrgb(color) + (180,)
                         draw.polygon(new_box, outline=color, fill=color_with_opacity, width=3)
                     else:
                         draw.polygon(new_box, outline=color, width=3)
-                    
+
                     draw.text((new_box[0]+8, new_box[1]+2),
                               "{}".format(label),
                               align="right",
                               font=font,
                               fill=color)
-                    
+
                     # Draw the mask
                     mask_draw.polygon(new_box, outline="white", fill="white")
-                
+
                 image_pil = Image.alpha_composite(image_pil, overlay)
                 image_pil = image_pil.convert('RGB')
-                
+
                 image_tensor = F.to_tensor(image_pil)
                 image_tensor = image_tensor[:3, :, :].unsqueeze(0).permute(0, 2, 3, 1).cpu().float()
                 out.append(image_tensor)
@@ -532,7 +533,7 @@ class Florence2Run:
                 out_masks.append(mask_tensor)
 
                 pbar.update(1)
-            
+
             elif task == 'docvqa':
                 if text_input == "":
                     raise ValueError("Text input (prompt) is required for 'docvqa'")
@@ -549,16 +550,16 @@ class Florence2Run:
 
                 results = processor.batch_decode(generated_ids, skip_special_tokens=False)[0]
                 clean_results = results.replace('</s>', '').replace('<s>', '')
-                
+
                 if len(image) == 1:
                     out_results = clean_results
                 else:
                     out_results.append(clean_results)
-                    
+
                 out.append(F.to_tensor(image_pil).unsqueeze(0).permute(0, 2, 3, 1).cpu().float())
 
                 pbar.update(1)
-            
+
         if len(out) > 0:
             out_tensor = torch.cat(out, dim=0)
         else:
@@ -572,9 +573,9 @@ class Florence2Run:
             print("Offloading model...")
             model.to(offload_device)
             mm.soft_empty_cache()
-        
+
         return (out_tensor, out_mask_tensor, out_results, out_data)
-     
+
 NODE_CLASS_MAPPINGS = {
     "DownloadAndLoadFlorence2Model": DownloadAndLoadFlorence2Model,
     "DownloadAndLoadFlorence2Lora": DownloadAndLoadFlorence2Lora,
