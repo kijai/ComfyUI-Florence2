@@ -54,6 +54,8 @@ https://huggingface.co/gokaygokay/Florence-2-Flux-Large
 
 https://huggingface.co/NikshepShetty/Florence-2-pixelpros
 
+You can also specify `florence2` folder in your `extra_model_paths.yaml`. This feature is supported on `Load Florence2 Model` node.
+
 ## Using DocVQA
 
 To use the DocVQA feature:
