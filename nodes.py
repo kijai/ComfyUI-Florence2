@@ -33,6 +33,8 @@ from comfy.utils import ProgressBar
 import folder_paths
 
 script_directory = os.path.dirname(os.path.abspath(__file__))
+model_directory = os.path.join(folder_paths.models_dir, "LLM")
+os.makedirs(model_directory, exist_ok=True)
 
 from transformers import AutoModelForCausalLM, AutoProcessor, set_seed
 
@@ -85,7 +87,7 @@ class DownloadAndLoadFlorence2Model:
         dtype = {"bf16": torch.bfloat16, "fp16": torch.float16, "fp32": torch.float32}[precision]
 
         model_name = model.rsplit('/', 1)[-1]
-        model_path = os.path.join(folder_paths.models_dir, "LLM", model_name)
+        model_path = os.path.join(model_directory, model_name)
         
         if not os.path.exists(model_path):
             print(f"Downloading Florence2 model to: {model_path}")
@@ -132,7 +134,7 @@ class DownloadAndLoadFlorence2Lora:
 
     def loadmodel(self, model):
         model_name = model.rsplit('/', 1)[-1]
-        model_path = os.path.join(folder_paths.models_dir, "LLM", model_name)
+        model_path = os.path.join(model_directory, model_name)
         
         if not os.path.exists(model_path):
             print(f"Downloading Florence2 lora model to: {model_path}")
