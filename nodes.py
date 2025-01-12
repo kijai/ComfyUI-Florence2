@@ -96,7 +96,7 @@ class DownloadAndLoadFlorence2Model:
                             local_dir=model_path,
                             local_dir_use_symlinks=False)
             
-        print(f"using {attention} for attention")
+        print(f"Florence2 using {attention} for attention")
         with patch("transformers.dynamic_module_utils.get_imports", fixed_get_imports): #workaround for unnecessary flash_attn requirement
             model = AutoModelForCausalLM.from_pretrained(model_path, attn_implementation=attention, device_map=device, torch_dtype=dtype,trust_remote_code=True)
         processor = AutoProcessor.from_pretrained(model_path, trust_remote_code=True)
@@ -172,7 +172,7 @@ class Florence2ModelLoader:
         dtype = {"bf16": torch.bfloat16, "fp16": torch.float16, "fp32": torch.float32}[precision]
         model_path = Path(folder_paths.models_dir, "LLM", model)
         print(f"Loading model from {model_path}")
-        print(f"using {attention} for attention")
+        print(f"Florence2 using {attention} for attention")
         with patch("transformers.dynamic_module_utils.get_imports", fixed_get_imports): #workaround for unnecessary flash_attn requirement
             model = AutoModelForCausalLM.from_pretrained(model_path, attn_implementation=attention, device_map=device, torch_dtype=dtype,trust_remote_code=True)
         processor = AutoProcessor.from_pretrained(model_path, trust_remote_code=True)
