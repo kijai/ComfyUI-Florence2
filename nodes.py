@@ -36,6 +36,9 @@ script_directory = os.path.dirname(os.path.abspath(__file__))
 model_directory = os.path.join(folder_paths.models_dir, "LLM")
 os.makedirs(model_directory, exist_ok=True)
 
+# Ensure ComfyUI knows about the LLM model path
+folder_paths.add_model_folder_path("LLM", model_directory)
+
 from transformers import AutoModelForCausalLM, AutoProcessor, set_seed
 
 class DownloadAndLoadFlorence2Model:
