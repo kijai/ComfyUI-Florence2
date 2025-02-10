@@ -1,3 +1,4 @@
+from collections.abc import Callable
 import torch
 import torchvision.transforms.functional as F
 import io
@@ -28,6 +29,27 @@ def fixed_get_imports(filename: str | os.PathLike) -> list[str]:
     return imports
 
 
+def create_path_dict(paths: list[str], predicate: Callable[[Path], bool] = lambda _: True) -> dict[str, str]:
+    """
+    Creates a flat dictionary of the contents of all given paths: ``{name: absolute_path}``.
+
+    Non-recursive.  Optionally takes a predicate to filter items.  Duplicate names overwrite (the last one wins).
+
+    Args:
+        paths (list[str]):
+            The paths to search for items.
+        predicate (Callable[[Path], bool]): 
+            (Optional) If provided, each path is tested against this filter.
+            Returns ``True`` to include a path.
+
+            Default: Include everything
+    """
+
+    flattened_paths = [item for path in paths for item in Path(path).iterdir() if predicate(item)]
+
+    return {item.name: str(item.absolute()) for item in flattened_paths}
+
+
 import comfy.model_management as mm
 from comfy.utils import ProgressBar
 import folder_paths
@@ -35,6 +57,9 @@ import folder_paths
 script_directory = os.path.dirname(os.path.abspath(__file__))
 model_directory = os.path.join(folder_paths.models_dir, "LLM")
 os.makedirs(model_directory, exist_ok=True)
+
+# Ensure ComfyUI knows about the LLM model path
+folder_paths.add_model_folder_path("LLM", model_directory)
 
 from transformers import AutoModelForCausalLM, AutoProcessor, set_seed
 
@@ -148,8 +173,11 @@ class Florence2ModelLoader:
 
     @classmethod
     def INPUT_TYPES(s):
+        all_llm_paths = folder_paths.get_folder_paths("LLM")
+        s.model_paths = create_path_dict(all_llm_paths, lambda x: x.is_dir())
+
         return {"required": {
-            "model": ([item.name for item in Path(folder_paths.models_dir, "LLM").iterdir() if item.is_dir()], {"tooltip": "models are expected to be in Comfyui/models/LLM folder"}),
+            "model": ([*s.model_paths], {"tooltip": "models are expected to be in Comfyui/models/LLM folder"}),
             "precision": (['fp16','bf16','fp32'],),
             "attention": (
                     [ 'flash_attention_2', 'sdpa', 'eager'],
@@ -170,7 +198,7 @@ class Florence2ModelLoader:
     def loadmodel(self, model, precision, attention, lora=None):
         device = mm.get_torch_device()
         dtype = {"bf16": torch.bfloat16, "fp16": torch.float16, "fp32": torch.float32}[precision]
-        model_path = Path(folder_paths.models_dir, "LLM", model)
+        model_path = Florence2ModelLoader.model_paths.get(model)
         print(f"Loading model from {model_path}")
         print(f"Florence2 using {attention} for attention")
         with patch("transformers.dynamic_module_utils.get_imports", fixed_get_imports): #workaround for unnecessary flash_attn requirement
