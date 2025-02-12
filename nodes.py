@@ -454,7 +454,10 @@ class Florence2Run:
                 out_tensor = annotated_image_tensor[:3, :, :].unsqueeze(0).permute(0, 2, 3, 1).cpu().float()
                 out.append(out_tensor)
                
-                out_data.append(bboxes)
+                if task == 'caption_to_phrase_grounding':
+                    out_data.append(parsed_answer[task_prompt])
+                else:
+                    out_data.append(bboxes)
 
                 
                 pbar.update(1)
