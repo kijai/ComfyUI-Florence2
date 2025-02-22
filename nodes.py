@@ -257,8 +257,8 @@ class Florence2Run:
             }
         }
     
-    RETURN_TYPES = ("IMAGE", "MASK", "STRING", "JSON")
-    RETURN_NAMES =("image", "mask", "caption", "data") 
+    RETURN_TYPES = ("IMAGE", "MASK", "STRING", "JSON", "BBOXES")
+    RETURN_NAMES = ("image", "mask", "caption", "data", "bboxes") 
     FUNCTION = "encode"
     CATEGORY = "Florence2"
 
@@ -454,7 +454,7 @@ class Florence2Run:
                 out_tensor = annotated_image_tensor[:3, :, :].unsqueeze(0).permute(0, 2, 3, 1).cpu().float()
                 out.append(out_tensor)
                
-                out_data.append(bboxes)
+                out_data.extend(bboxes)
 
                 
                 pbar.update(1)
@@ -596,14 +596,28 @@ class Florence2Run:
         if len(out_masks) > 0:
             out_mask_tensor = torch.cat(out_masks, dim=0)
         else:
-            out_mask_tensor = torch.zeros((1,64,64), dtype=torch.float32, device="cpu")
+            # Create a mask with the same dimensions as the input image
+            out_mask_tensor = torch.zeros((len(image), height, width), dtype=torch.float32, device="cpu")
 
         if not keep_model_loaded:
             print("Offloading model...")
             model.to(offload_device)
             mm.soft_empty_cache()
         
-        return (out_tensor, out_mask_tensor, out_results, out_data)
+        # Convert out_data to the format expected by Sam2 Ultra nodes
+        bboxes = [out_data] if out_data else []
+        
+        # Ensure out_results is always a string
+        if isinstance(out_results, list):
+            out_results = ' '.join(out_results)
+        elif out_results is None:
+            out_results = ""
+        
+        # Ensure out_data is always a list
+        if not isinstance(out_data, list):
+            out_data = []
+        
+        return (out_tensor, out_mask_tensor, out_results, out_data, bboxes)
      
 NODE_CLASS_MAPPINGS = {
     "DownloadAndLoadFlorence2Model": DownloadAndLoadFlorence2Model,
