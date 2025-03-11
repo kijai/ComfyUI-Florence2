@@ -45,7 +45,7 @@ def create_path_dict(paths: list[str], predicate: Callable[[Path], bool] = lambd
             Default: Include everything
     """
 
-    flattened_paths = [item for path in paths for item in Path(path).iterdir() if predicate(item)]
+    flattened_paths = [item for path in paths if Path(path).exists() for item in Path(path).iterdir() if predicate(item)]
 
     return {item.name: str(item.absolute()) for item in flattened_paths}
 
