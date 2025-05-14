@@ -62,6 +62,7 @@ os.makedirs(model_directory, exist_ok=True)
 folder_paths.add_model_folder_path("LLM", model_directory)
 
 from transformers import AutoModelForCausalLM, AutoProcessor, set_seed
+from transformers import AutoConfig
 
 class DownloadAndLoadFlorence2Model:
     @classmethod
@@ -123,8 +124,21 @@ class DownloadAndLoadFlorence2Model:
             
         print(f"Florence2 using {attention} for attention")
         with patch("transformers.dynamic_module_utils.get_imports", fixed_get_imports): #workaround for unnecessary flash_attn requirement
-            model = AutoModelForCausalLM.from_pretrained(model_path, attn_implementation=attention, torch_dtype=dtype,trust_remote_code=True).to(offload_device)
-        processor = AutoProcessor.from_pretrained(model_path, trust_remote_code=True)
+            config = AutoConfig.from_pretrained(model_path, trust_remote_code=True, local_files_only=True)
+            model = AutoModelForCausalLM.from_config(config, trust_remote_code=True)
+                        
+            state_dict_path = os.path.join(model_path, "pytorch_model.bin")
+            state_dict = torch.load(state_dict_path, map_location="cpu")
+            model.load_state_dict(state_dict)
+
+            model = model.to(dtype)
+
+            if hasattr(model.config, "attn_implementation"):
+                model.config.attn_implementation = attention
+
+            model = model.to(device)
+
+            processor = AutoProcessor.from_pretrained(model_path, trust_remote_code=True, local_files_only=True)
 
         if lora is not None:
             from peft import PeftModel
@@ -203,8 +217,21 @@ class Florence2ModelLoader:
         print(f"Loading model from {model_path}")
         print(f"Florence2 using {attention} for attention")
         with patch("transformers.dynamic_module_utils.get_imports", fixed_get_imports): #workaround for unnecessary flash_attn requirement
-            model = AutoModelForCausalLM.from_pretrained(model_path, attn_implementation=attention, torch_dtype=dtype,trust_remote_code=True).to(offload_device)
-        processor = AutoProcessor.from_pretrained(model_path, trust_remote_code=True)
+            config = AutoConfig.from_pretrained(model_path, trust_remote_code=True, local_files_only=True)
+            model = AutoModelForCausalLM.from_config(config, trust_remote_code=True)
+                        
+            state_dict_path = os.path.join(model_path, "pytorch_model.bin")
+            state_dict = torch.load(state_dict_path, map_location="cpu")
+            model.load_state_dict(state_dict)
+
+            model = model.to(dtype)
+
+            if hasattr(model.config, "attn_implementation"):
+                model.config.attn_implementation = attention
+
+            model = model.to(device)
+
+            processor = AutoProcessor.from_pretrained(model_path, trust_remote_code=True, local_files_only=True)
 
         if lora is not None:
             from peft import PeftModel
