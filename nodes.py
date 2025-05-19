@@ -17,6 +17,8 @@ from pathlib import Path
 from unittest.mock import patch
 from transformers.dynamic_module_utils import get_imports
 
+from safetensors.torch import load_file, save_file, save_model
+
 def fixed_get_imports(filename: str | os.PathLike) -> list[str]:
     try:
         if not str(filename).endswith("modeling_florence2.py"):
@@ -98,6 +100,7 @@ class DownloadAndLoadFlorence2Model:
             },
             "optional": {
                 "lora": ("PEFTLORA",),
+                "convert_to_safetensors": ("BOOLEAN", {"default": False, "tooltip": "Some of the older model weights are not saved in .safetensors format, which seem to cause longer loading times, this option converts the .bin weights to .safetensors"}),
             }
         }
 
@@ -106,7 +109,7 @@ class DownloadAndLoadFlorence2Model:
     FUNCTION = "loadmodel"
     CATEGORY = "Florence2"
 
-    def loadmodel(self, model, precision, attention, lora=None):
+    def loadmodel(self, model, precision, attention, lora=None, convert_to_safetensors=False):
         device = mm.get_torch_device()
         offload_device = mm.unet_offload_device()
         dtype = {"bf16": torch.bfloat16, "fp16": torch.float16, "fp32": torch.float32}[precision]
@@ -122,6 +125,23 @@ class DownloadAndLoadFlorence2Model:
                             local_dir_use_symlinks=False)
             
         print(f"Florence2 using {attention} for attention")
+        
+        if convert_to_safetensors:
+            model_weight_path = os.path.join(model_path, 'pytorch_model.bin')
+            if os.path.exists(model_weight_path):
+                print(f"Converting {model_weight_path} to {model_weight_path.removesuffix(".bin")}.safetensors")
+                safetensors_weight_path = os.path.join(model_path, 'model.safetensors')
+                if not os.path.exists(safetensors_weight_path):
+                    sd = torch.load(model_weight_path, map_location=offload_device)
+                    sd_new = {}
+                    for k, v in sd.items():
+                        sd_new[k] = v.clone()
+                    save_file(sd_new, safetensors_weight_path)
+                    if os.path.exists(safetensors_weight_path):
+                        print(f"Conversion successful. Deleting original file: {model_weight_path}")
+                        os.remove(model_weight_path)
+                        print(f"Original {model_weight_path} file deleted.")
+            
         with patch("transformers.dynamic_module_utils.get_imports", fixed_get_imports): #workaround for unnecessary flash_attn requirement
             model = AutoModelForCausalLM.from_pretrained(model_path, attn_implementation=attention, torch_dtype=dtype,trust_remote_code=True).to(offload_device)
         processor = AutoProcessor.from_pretrained(model_path, trust_remote_code=True)
@@ -187,6 +207,7 @@ class Florence2ModelLoader:
             },
             "optional": {
                 "lora": ("PEFTLORA",),
+                "convert_to_safetensors": ("BOOLEAN", {"default": False, "tooltip": "Some of the older model weights are not saved in .safetensors format, which seem to cause longer loading times, this option converts the .bin weights to .safetensors"}),
             }
         }
 
@@ -195,13 +216,28 @@ class Florence2ModelLoader:
     FUNCTION = "loadmodel"
     CATEGORY = "Florence2"
 
-    def loadmodel(self, model, precision, attention, lora=None):
+    def loadmodel(self, model, precision, attention, lora=None, convert_to_safetensors=False):
         device = mm.get_torch_device()
         offload_device = mm.unet_offload_device()
         dtype = {"bf16": torch.bfloat16, "fp16": torch.float16, "fp32": torch.float32}[precision]
         model_path = Florence2ModelLoader.model_paths.get(model)
         print(f"Loading model from {model_path}")
         print(f"Florence2 using {attention} for attention")
+        if convert_to_safetensors:
+            model_weight_path = os.path.join(model_path, 'pytorch_model.bin')
+            if os.path.exists(model_weight_path):
+                print(f"Converting {model_weight_path} to {model_weight_path.removesuffix(".bin")}.safetensors")
+                safetensors_weight_path = os.path.join(model_path, 'model.safetensors')
+                if not os.path.exists(safetensors_weight_path):
+                    sd = torch.load(model_weight_path, map_location=offload_device)
+                    sd_new = {}
+                    for k, v in sd.items():
+                        sd_new[k] = v.clone()
+                    save_file(sd_new, safetensors_weight_path)
+                    if os.path.exists(safetensors_weight_path):
+                        print(f"Conversion successful. Deleting original file: {model_weight_path}")
+                        os.remove(model_weight_path)
+                        print(f"Original {model_weight_path} file deleted.")
         with patch("transformers.dynamic_module_utils.get_imports", fixed_get_imports): #workaround for unnecessary flash_attn requirement
             model = AutoModelForCausalLM.from_pretrained(model_path, attn_implementation=attention, torch_dtype=dtype,trust_remote_code=True).to(offload_device)
         processor = AutoProcessor.from_pretrained(model_path, trust_remote_code=True)
