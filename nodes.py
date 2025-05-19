@@ -129,8 +129,8 @@ class DownloadAndLoadFlorence2Model:
         if convert_to_safetensors:
             model_weight_path = os.path.join(model_path, 'pytorch_model.bin')
             if os.path.exists(model_weight_path):
-                print(f"Converting {model_weight_path} to {model_weight_path.removesuffix(".bin")}.safetensors")
                 safetensors_weight_path = os.path.join(model_path, 'model.safetensors')
+                print(f"Converting {model_weight_path} to {safetensors_weight_path}")
                 if not os.path.exists(safetensors_weight_path):
                     sd = torch.load(model_weight_path, map_location=offload_device)
                     sd_new = {}
@@ -226,8 +226,8 @@ class Florence2ModelLoader:
         if convert_to_safetensors:
             model_weight_path = os.path.join(model_path, 'pytorch_model.bin')
             if os.path.exists(model_weight_path):
-                print(f"Converting {model_weight_path} to {model_weight_path.removesuffix(".bin")}.safetensors")
                 safetensors_weight_path = os.path.join(model_path, 'model.safetensors')
+                print(f"Converting {model_weight_path} to {safetensors_weight_path}")
                 if not os.path.exists(safetensors_weight_path):
                     sd = torch.load(model_weight_path, map_location=offload_device)
                     sd_new = {}
