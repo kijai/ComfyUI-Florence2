@@ -17,7 +17,9 @@ from pathlib import Path
 from unittest.mock import patch
 from transformers.dynamic_module_utils import get_imports
 
-from safetensors.torch import load_file, save_file, save_model
+import transformers
+
+from safetensors.torch import save_file
 
 def fixed_get_imports(filename: str | os.PathLike) -> list[str]:
     try:
@@ -141,9 +143,14 @@ class DownloadAndLoadFlorence2Model:
                         print(f"Conversion successful. Deleting original file: {model_weight_path}")
                         os.remove(model_weight_path)
                         print(f"Original {model_weight_path} file deleted.")
-            
-        with patch("transformers.dynamic_module_utils.get_imports", fixed_get_imports): #workaround for unnecessary flash_attn requirement
-            model = AutoModelForCausalLM.from_pretrained(model_path, attn_implementation=attention, torch_dtype=dtype,trust_remote_code=True).to(offload_device)
+        
+        if transformers.__version__ < '4.51.0':
+            with patch("transformers.dynamic_module_utils.get_imports", fixed_get_imports): #workaround for unnecessary flash_attn requirement
+                 model = AutoModelForCausalLM.from_pretrained(model_path, attn_implementation=attention, torch_dtype=dtype,trust_remote_code=True).to(offload_device)
+        else:
+            from .modeling_florence2 import Florence2ForConditionalGeneration
+            model = Florence2ForConditionalGeneration.from_pretrained(model_path, attn_implementation=attention, torch_dtype=dtype).to(offload_device)
+    
         processor = AutoProcessor.from_pretrained(model_path, trust_remote_code=True)
 
         if lora is not None:
@@ -238,8 +245,13 @@ class Florence2ModelLoader:
                         print(f"Conversion successful. Deleting original file: {model_weight_path}")
                         os.remove(model_weight_path)
                         print(f"Original {model_weight_path} file deleted.")
-        with patch("transformers.dynamic_module_utils.get_imports", fixed_get_imports): #workaround for unnecessary flash_attn requirement
-            model = AutoModelForCausalLM.from_pretrained(model_path, attn_implementation=attention, torch_dtype=dtype,trust_remote_code=True).to(offload_device)
+
+        if transformers.__version__ < '4.51.0':
+            with patch("transformers.dynamic_module_utils.get_imports", fixed_get_imports): #workaround for unnecessary flash_attn requirement
+                 model = AutoModelForCausalLM.from_pretrained(model_path, attn_implementation=attention, torch_dtype=dtype,trust_remote_code=True).to(offload_device)
+        else:
+            from .modeling_florence2 import Florence2ForConditionalGeneration
+            model = Florence2ForConditionalGeneration.from_pretrained(model_path, attn_implementation=attention, torch_dtype=dtype).to(offload_device)
         processor = AutoProcessor.from_pretrained(model_path, trust_remote_code=True)
 
         if lora is not None:
