@@ -2340,7 +2340,9 @@ class Florence2PreTrainedModel(PreTrainedModel):
         Retrieve language_model's attribute to check whether the model supports
         Flash Attention 2 or not.
         """
-        return self.language_model._supports_flash_attn_2
+        if hasattr(self, 'language_model') and self.language_model is not None:
+            return self.language_model._supports_flash_attn_2
+        return True  # Default to True during initialization
 
     @property
     def _supports_sdpa(self):
@@ -2348,7 +2350,9 @@ class Florence2PreTrainedModel(PreTrainedModel):
         Retrieve language_model's attribute to check whether the model supports
         SDPA or not.
         """
-        return self.language_model._supports_sdpa
+        if hasattr(self, 'language_model') and self.language_model is not None:
+            return self.language_model._supports_sdpa
+        return True  # Default to True during initialization
 
 
 FLORENCE2_INPUTS_DOCSTRING = r"""

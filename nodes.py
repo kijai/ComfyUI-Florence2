@@ -384,6 +384,7 @@ class Florence2Run:
                 max_new_tokens=max_new_tokens,
                 do_sample=do_sample,
                 num_beams=num_beams,
+                use_cache=False
             )
 
             results = processor.batch_decode(generated_ids, skip_special_tokens=False)[0]
