@@ -1,0 +1,864 @@
+{
+  "id": "fad9cfc7-149d-4d02-ae33-8256e2134331",
+  "revision": 0,
+  "last_node_id": 25,
+  "last_link_id": 24,
+  "nodes": [
+    {
+      "id": 4,
+      "type": "Florence2Run",
+      "pos": [
+        723,
+        424
+      ],
+      "size": [
+        400,
+        364
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 2
+        },
+        {
+          "name": "florence2_model",
+          "type": "FL2MODEL",
+          "link": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "slot_index": 0,
+          "links": null
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "slot_index": 1,
+          "links": null
+        },
+        {
+          "name": "caption",
+          "type": "STRING",
+          "slot_index": 2,
+          "links": [
+            15
+          ]
+        },
+        {
+          "name": "data",
+          "type": "JSON",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-florence2",
+        "ver": "1.0.3",
+        "Node name for S&R": "Florence2Run"
+      },
+      "widgets_values": [
+        "",
+        "detailed_caption",
+        true,
+        false,
+        1024,
+        3,
+        true,
+        "",
+        152812,
+        "fixed"
+      ]
+    },
+    {
+      "id": 6,
+      "type": "ListCounter //Inspire",
+      "pos": [
+        650.7968139648438,
+        864.464599609375
+      ],
+      "size": [
+        210,
+        58
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "signal",
+          "type": "*",
+          "link": 3
+        }
+      ],
+      "outputs": [
+        {
+          "name": "INT",
+          "type": "INT",
+          "slot_index": 0,
+          "links": [
+            4
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-inspire-pack",
+        "ver": "ecf8ab6f588bc8442ff7720b383d085ecabbc407",
+        "Node name for S&R": "ListCounter //Inspire"
+      },
+      "widgets_values": [
+        1
+      ]
+    },
+    {
+      "id": 7,
+      "type": "CR Integer To String",
+      "pos": [
+        900.1543579101562,
+        862.9202270507812
+      ],
+      "size": [
+        210,
+        78
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "int_",
+          "type": "INT",
+          "pos": [
+            10,
+            56
+          ],
+          "link": 4
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "slot_index": 0,
+          "links": [
+            7
+          ]
+        },
+        {
+          "name": "show_help",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyroll",
+        "ver": "d78b780ae43fcf8c6b7c6505e6ffb4584281ceca",
+        "Node name for S&R": "CR Integer To String"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 16,
+      "type": "ShowText|pysssss",
+      "pos": [
+        1189.561279296875,
+        327.42718505859375
+      ],
+      "size": [
+        315,
+        6892
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "pos": [
+            10,
+            36
+          ],
+          "link": 15
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "shape": 6,
+          "type": "STRING",
+          "slot_index": 0,
+          "links": [
+            23
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-custom-scripts",
+        "ver": "1.1.1",
+        "Node name for S&R": "ShowText|pysssss"
+      },
+      "widgets_values": [
+        "The image showcases a person lying on their stomach on a sandy beach, illuminated by natural light streaming from above. The person appears relaxed and comfortable, enjoying the peaceful surroundings.",
+        "In the image, we can see a nude woman lying on a white couch against a dark background. She is wearing a black dress adorned with sparkling sequins. Her arms are stretched out to her sides, and she has her hands resting on her thighs. The lighting in the room is dim, creating a mysterious atmosphere.",
+        "In the image, we can see a nude individual embracing each other lovingly. The person is adorned with delicate earrings and has tattoos on their arms. They are standing in front of a window, which offers a glimpse of greenery outside. To the left of the window, there's a curtain, adding depth to the scene. In the background, there appears to be a shelf with various items on it.",
+        "The image shows a nude person lying on a bed covered with sheets. The person appears to be relaxed, with their arms resting at their sides. There are visible bumps on their skin, and the person has short hair. The lighting in the room is soft, creating a peaceful atmosphere.",
+        "In the image, we can see a naked person lying on a bed covered with a white sheet. The person is wearing a black outfit adorned with sparkling sequins. The room appears to be dimly lit, creating a mysterious atmosphere.",
+        "This image showcases a nude person lying on a bed covered with white sheets. The person appears relaxed and comfortable, with their arms resting on their stomach. In the background, there's a glimpse of a bedroom setting with a window letting in natural light.",
+        "In the image, we can see a nude woman lying on a towel in a bathroom. She is holding a cup in her hand and appears to be drinking from it. To her left, there's a bottle of soap labeled 'Blue Ribbon'. The bathroom has a tiled wall and a window with blinds partially drawn.",
+        "In the image, we can see a nude person lying on a bed covered with a white sheet. The person appears relaxed, with their arms resting on their stomach and their head slightly tilted downwards. Additionally, there is a pair of headphones placed on the bed next to the person.",
+        "In the image, we can see a nude woman lying on a bed covered with a white sheet. She has blonde hair and is looking directly at the camera with a slight smile. To her left, there's a mirror reflecting her image. The room appears to be dimly lit, creating a cozy atmosphere.",
+        "A close-up view of a young woman's upper body. She has long blonde hair and is looking directly at the camera with a slight smile. The background is blurred but appears to be an indoor setting. There is something written on the wall to the left of the woman.",
+        "In the image, we can see a nude person lying on a bed covered with a white sheet. The person appears to be relaxed, with their arms resting on their stomach and their head slightly tilted downwards. They are wearing black underwear, which reaches just above their knees. To the right of the person, there is a pair of glasses placed on a surface. The room is dimly lit, creating a peaceful atmosphere.",
+        "The image shows a person lying on their stomach, covered in soap suds, likely after bathing. The person has short hair and is wearing earrings. In the background, there is another person whose face is not clearly visible due to the angle and focus of the photo. The setting appears to be indoors, possibly a bathroom, with a mirror reflecting the person's image.",
+        "A nude woman stands confidently in a bedroom setting, stretching her arms above her head. She is adorned with jewelry, including earrings and bracelets on her wrists. Behind her is a bed covered with blankets and pillows, and a potted plant sits beside it. The room has a cozy ambiance with soft lighting illuminating the space.",
+        "The image shows two nude individuals lying on a bed covered with a white sheet. The person on the left appears to be lying on their stomach with their legs spread apart, revealing a muscular build. The other person is lying on its side, facing away from the camera, with their head resting on the pillow. Both individuals have short hair.",
+        "This image showcases a nude person lying on a bed covered with white sheets. The person appears relaxed and comfortable, with their legs spread apart.",
+        "The image shows a person lying on their stomach on a surface, illuminated by a soft light source from above. The person is wearing underwear and appears to be sleeping peacefully. The background is dimly lit, creating a cozy atmosphere.",
+        "A nude woman stands confidently in a bedroom setting. She is adorned with earrings and has her hands gently placed on her thighs. The room is furnished with a bed covered in blankets and pillows, and a window lets in natural light.",
+        "The image shows a person lying on their stomach, covered in soap bubbles. The bubbles create a sparkling effect against the skin. The person appears relaxed and comfortable.",
+        "In the image, we can see a nude person lying on a bed covered with a blanket. The person appears to be relaxed, with their legs tucked under their body. Their head is resting on their stomach, and they have a slight smile on their face. Additionally, there is a bottle visible in the top right corner of the image.",
+        "This image showcases a nude person lying on a bed covered with a blanket. The person appears to be relaxed, with their arms resting at their sides. They are wearing underwear, revealing a portion of their torso. The lighting in the room is dim, creating a peaceful atmosphere.",
+        "A nude woman sitting on a bed with her legs crossed. She has blonde hair and is wearing underwear. There is a plant to her right and a curtain to her left. The room has a light fixture on the wall.",
+        "A nude young woman stands confidently in a bedroom setting. She is adorned with earrings and has a slight smile on her face. The room is furnished with a bed covered in blankets and pillows, and a lamp casts a warm glow on the bedside table.",
+        "The image shows a nude person lying on a bed covered with sheets. The person appears to be relaxed, with their arms resting at their sides and their legs slightly bent at the knees. They have short hair and no visible facial features. To the left of the person, there is an object that looks like a laptop or electronic device.",
+        "A nude woman lies on the floor in a bedroom setting, revealing her breasts and nipples. She has blonde hair styled in loose waves and is wearing white underwear. In the background, there is a bed with cushions and blankets, a nightstand with a lamp and some items on it, and another sofa.",
+        "The image shows a close-up view of a person lying down, revealing a portion of their stomach and abdomen. The person appears to be naked, and there are patches of skin visible. The lighting in the photo is dim, creating a mysterious atmosphere.",
+        "In the image, we can see a nude person lying on a bed covered with a white sheet. The person appears relaxed, with their arms resting on their stomach. The room has a window with curtains, allowing natural light to enter. Outside the window, there are vehicles parked outside.",
+        "In the image, we can see a naked person lying on a bed covered with a white sheet. The person appears relaxed, with their arms resting on their stomach. To the left of the person, there's another person whose face is not visible in the frame. In the background, there are two potted plants adding a touch of greenery to the room.",
+        "The image shows a person lying on their stomach, covered in sweatpants. Water droplets can be seen glistening on their skin, creating a shimmering effect. There are also bumps protruding from the skin, adding texture and depth to the image. In the top left corner, there is a timestamp indicating '27'.",
+        "A nude woman stands confidently in a bedroom setting, holding something in her hands. She is adorned with earrings and has flawless breasts. The room is furnished with a bed covered in white sheets and pillows, and a window lets in natural light.",
+        "The image shows a nude person lying on a bed covered with a sheet featuring intricate patterns. The person has short hair and appears to be resting peacefully.",
+        "A young woman poses confidently atop a bed, showcasing her toned physique and stylish outfit. She features long blonde hair cascading down her shoulders and is looking directly at the camera with a slight smile. In the background, there's a potted plant adding a touch of greenery to the room.",
+        "A close-up portrait of a young woman lying on her stomach on a couch. She has long brown hair and is looking directly at the camera with a slight smile. The background is blurred but appears to be an indoor setting.",
+        "A nude woman poses confidently on a bed covered with a black and white patterned sheet. She is wearing black shorts and has blonde hair styled in loose waves. The room is dimly lit, creating a cozy atmosphere.",
+        "A young woman poses nude on a bed, wearing ruffled underwear. She has blonde hair and is looking directly at the camera with a slight smile. In the background, there are decorative items such as vases with flowers, bottles, and a mirror reflecting the room.",
+        "A nude woman poses confidently on a bed covered with a black and white patterned blanket. She is wearing black underwear and has blonde hair cascading down her shoulders. The room is dimly lit, creating a cozy atmosphere.",
+        "A nude selfie of a young adult male lying on a bed. He has long blonde hair and is looking directly at the camera with a slight smile. He is wearing underwear and has visible nipple holes. In the background, there is a bedroom setting with a lamp illuminating the room.",
+        "A woman with long brown hair is posing naked. She is wearing a black dress and has a delicate chain necklace around her neck. In the background, there is a mirror on the wall reflecting a room with chairs and a table.",
+        "A nude woman poses in a bedroom setting. She has long blonde hair and is wearing large hoop earrings. She is also wearing a necklace with a circular pendant.",
+        "A nude woman poses in a bedroom setting. She has long blonde hair and is wearing ruffled underwear. In the background, there is a bed with pillows and blankets, as well as decorative items such as vases with flowers and candles. There is also a mirror on the wall reflecting the room.",
+        "A nude woman poses on a kitchen counter with bananas in the background. She has a slight smile on her face and is looking directly at the camera.",
+        "A nude woman poses in a bedroom setting. She is wearing lace underwear and has long brown hair cascading down her shoulders. The room is dimly lit, with a bed visible in the background.",
+        "A selfie of a young woman lying nude on a kitchen counter. She has long blonde hair and is wearing underwear with a floral pattern. In the background, there is a kitchenette with stainless steel appliances and cabinets.",
+        "A nude woman stands in a room with a plant to her right and a curtain in the background. She is wearing white underwear and has her arms crossed over her chest. There is a door to her left and a plant on the floor.",
+        "A young woman poses confidently in her underwear, showcasing her toned physique. She stands beside a bed adorned with pillows and blankets, while two potted plants add a touch of greenery to the room.",
+        "A nude woman poses confidently atop a marble countertop, adorned with delicate earrings. The background reveals a glimpse of a kitchen setting with a sink and a window.",
+        "A close-up portrait of a young woman with long, wavy blonde hair framing her face. She has a slight smile and is looking directly at the camera. The background is blurred, but it appears to be an indoor setting with a door handle visible on the left side.",
+        "A young woman with long blonde hair smiles at the camera. She is wearing a black dress and has a delicate chain necklace around her neck. In the background, there is a lamp on a stand and a zebra print cloth draped over a chair.",
+        "A close-up view of a young woman's upper body. She has long blonde hair cascading down her shoulders and is wearing a gold chain necklace. She is smiling slightly and looking directly at the camera. In the background, there is a kitchen counter with various items on it, including bottles, a microwave oven, and a television screen displaying images. The lighting in the room is soft and warm.",
+        "A nude woman poses confidently in a kitchen setting. She wears strappy underwear and has long brown hair cascading down her shoulders. On the kitchen counter, there is a jar containing herbs and spices, and various kitchen utensils can be seen.",
+        "A young woman with long blonde hair poses confidently in front of a mirror, showcasing her toned physique. She is wearing a white dress adorned with delicate floral patterns.",
+        "A close-up view of a young woman's upper body. She has long blonde hair and is looking directly at the camera with a slight smile. She is wearing black straps around her shoulders. In the background, there is a mirror attached to the wall.",
+        "A close-up view of a young woman lying on her stomach. She has blonde hair and is wearing a pink bikini top. In the background, there is a towel rack with towels hanging on it. There is also a plant in the corner. The woman appears relaxed and comfortable.",
+        "A close-up view of a young woman's face. She has blonde hair and is looking directly at the camera with a slight smile. She is wearing a pink bikini bottom. In the background, there is a satellite dish mounted on a pole, a chair, and some greenery.",
+        "A young woman with blonde hair is nude, wearing a pink bikini top and brown shorts. She has a delicate necklace around her neck and is holding an orange object in her hand. In the background, there is a fan mounted on the wall and a mirror reflecting some objects.",
+        "A young woman with long blonde hair poses confidently against a neutral background. She wears a delicate silver necklace with a heart pendant.",
+        "A young woman with blonde hair and pale skin poses confidently against a backdrop of a bedroom setting. She wears a pink bikini top and has a delicate starfish charm dangling from her neck. To her left stands a lamp with a zebra print shade.",
+        "A young woman with wavy hair poses confidently against a dark background. She is wearing a pair of underwear with the words \"Amare Amare\" printed on them. Her expression is neutral, and she looks directly at the camera.",
+        "A beautiful young woman poses confidently in a luxurious bedroom setting. She is wearing a stunning black dress adorned with intricate details, and her hair cascades down her shoulders. The room features luxurious furnishings such as chairs and tables, creating an inviting atmosphere.",
+        "A young woman poses confidently in a bathroom setting. She is wearing a black dress and has wet hair cascading down her shoulders. The bathroom features a sink with a mirror above it, and there are chairs arranged around the room. On the wall, there are two framed pictures.",
+        "A nude woman poses in a kitchen setting. She has long brown hair and is wearing earrings. There is a sink visible in the background, along with various kitchen appliances and utensils.",
+        "A woman with long, wavy brown hair stands nude near a swimming pool. She is wearing a black necklace with dangling beads. In the background, there is a dining table with chairs, a mirror on the wall, and some decorative items. The lighting suggests it is daytime.",
+        "A nude woman with long brown hair poses against a backdrop of a dining table with chairs and a painting on the wall. She is wearing a delicate necklace with dangling beads.",
+        "A nude woman poses in a bathroom setting. She is wearing a black choker necklace and has her hair styled in loose waves. In the background, there is a chair and a table with various items on it. There is also a framed picture on the wall.",
+        "A nude teenage girl poses confidently in front of a mirror, showcasing her curves and smooth skin. She wears a pink bikini top and has long brown hair cascading down her shoulders.",
+        "A woman poses confidently in a bathroom setting. She wears a pair of black leggings and a pink sports bra, completing her athletic look. Her hair is styled neatly, and she has a slight smile on her face. In the background, there's a mirror reflecting her image.",
+        "A woman with shoulder length brown hair smiles at the camera. She wears a black and pink sports bra and black leggings. On the right side of the image, there is a partial view of a white object.",
+        "A close-up view of a young woman's face, looking directly at the camera with a slight smile. She has long brown hair cascading down her shoulders and is wearing a white top adorned with small black dots. To her right, there is an orange cloth draped over her shoulder. The background is blurred, but it appears to be an indoor setting with a window and some greenery visible.",
+        "A close-up view of a young woman's face. She has long brown hair and is looking directly at the camera with a slight smile. She is wearing a white dress with ruffles. Behind her is a plain white wall with a small plant on the left side. To her right, there is a mirror reflecting a light fixture on the wall. There is also an orange cloth draped over her shoulder.",
+        "A close-up portrait of a young woman with long, wavy brown hair. She has a neutral expression on her face and is looking directly at the camera. She is wearing a white polka dot top and has a bow tied around her waist. In the background, there is a blurred view of a room with various objects, including a plant, a mirror, and some decorative items.",
+        "A close-up portrait of a young woman lying down with her head resting on her shoulder. She has light brown hair and is looking directly at the camera with a slight smile. She is wearing gold earrings. The background is blurred.",
+        "A nude woman posing in a kitchen setting. She has long brown hair and is wearing black gloves. Her breasts are adorned with red polka dots. In the background, we can see stainless steel appliances and cabinets.",
+        "A nude woman poses in a bedroom setting, wearing plaid shorts. She has long brown hair and is smiling at the camera. There is a mirror on the wall behind her, reflecting her image. To the right, there is a chair and some items on the floor.",
+        "A nude teenage girl poses confidently atop a bedspread with a geometric pattern. She is wearing large hoop earrings and has a delicate necklace with a circular pendant dangling from her neck. Her hair is styled neatly, and she has a slight smile on her face.",
+        "A nude woman lying on her stomach, revealing a portion of her stomach. She has long brown hair and is wearing a necklace with a circular pendant. The background is blurry.",
+        "A nude woman poses in front of a mirror, wearing large hoop earrings and holding a bottle with a label 'Hugger'. She has long brown hair and is looking directly at the camera with a slight smile.",
+        "A nude woman poses in a bedroom setting. She is wearing large hoop earrings and has a delicate necklace with a round pendant around her neck. Her hair is pulled back into a ponytail. She has a slight smile on her face and is looking directly at the camera.",
+        "A nude woman sitting on a couch with a pillow behind her. She has long brown hair and is wearing large hoop earrings. There is a laptop on the floor to her right.",
+        "A nude young woman poses confidently atop a couch, adorned with a delicate necklace featuring a circular pendant. The backdrop reveals a cozy bedroom setting with a pillow and a remote control placed on the floor.",
+        "A nude woman sitting on a couch next to a remote control. She has long brown hair and is wearing a necklace with a circular pendant. To her left, there is a bottle with a label featuring an insect design. The background includes a pillow and a wall with dotted lines.",
+        "A nude young woman poses confidently in front of a projector screen. She wears a delicate necklace with a circular pendant and earrings. Behind her, there's a laptop placed on a surface, along with some bottles and glasses. The room appears to be dimly lit, creating a cozy atmosphere.",
+        "A young woman poses confidently atop a bed, illuminated by soft lighting. She wears comfortable underwear, revealing her toned physique. The background is slightly blurred, adding a dreamy atmosphere to the scene.",
+        "A nude teenage girl poses confidently in a bathroom setting. She is wearing black underwear and has her hair pulled back into a ponytail. The bathroom has wooden walls and a tiled floor.",
+        "A nude woman poses confidently with her hands gently placed on her cheeks. She has long brown hair cascading down her shoulders and is wearing a pink sweater. In the background, there is a kitchen counter with various items on it, including a bottle and a bowl. The woman's expression is neutral, and she looks directly at the camera.",
+        "A close-up view of a young woman's upper body. She has long brown hair and is looking directly at the camera with a slight smile. She is wearing white underwear.",
+        "A nude woman lying on her stomach on a bed, surrounded by objects such as pillows and blankets. She has long brown hair and is looking directly at the camera with a slight smile.",
+        "A nude woman poses in a bedroom setting, revealing her toned physique. She has long brown hair and is wearing underwear. In the background, there is a bed with pink sheets and pillows, and a mirror reflects some objects.",
+        "A nude woman lying on her stomach on a bed. She has long brown hair and is looking directly at the camera with a slight smile. In her hand, she is holding a container with red nail polish.",
+        "A nude woman posing backstage at a hotel. She is flexing her arms and has red spots on her cheeks. There is a sign on the wall behind her saying 'NO TRESPASSING VIBES DO NOT DO IT'. To the right, there is a mirror reflecting the interior of the hotel room.",
+        "A nude woman lying on her stomach on a bed, holding a folded towel with a QR code printed on it. She has long blonde hair and is looking directly at the camera with a slight smile. The background is blurred but appears to be an indoor setting.",
+        "A nude woman poses confidently in a hallway, showcasing her curves and smooth skin. She is wearing black underwear and has her hair pulled back into a neat bun. The hallway has wooden floors and walls, creating a warm and inviting atmosphere.",
+        "The image showcases a close-up view of human eyes, highlighting their intricate eyelashes, irises, and eyebrows. The skin appears slightly wrinkled, adding texture to the image.",
+        "The image showcases a close-up view of human eyes, highlighting their intricate eyelashes, irises, and eyebrows. The skin appears slightly wrinkled, adding texture to the image.",
+        "A nude woman poses confidently in a kitchen setting. She wears earrings and has a slight smile on her face. On the countertop behind her, there is a potted plant adding a touch of greenery to the scene.",
+        "The image showcases a close-up view of human eyes, highlighting their intricate eyelashes, irises, and eyebrows. The skin appears slightly wrinkled, adding texture to the image.",
+        "A close-up view of a child's face, focusing on its eyelashes, eyelid, pupil, eyebrow, eyelash extensions, skin tone, and hair color.",
+        "A close-up view of a child's face, focusing on its eyelashes, eyelid, pupil, eyebrow, eyelash extensions, skin tone, and hair color.",
+        "A close-up view of a child's face, focusing on its eyelashes, eyelid, pupil, eyebrow, eyelash extensions, skin tone, and hair color.",
+        "A close-up view of a child's face, highlighting its delicate eyelashes, iris, and eyebrow.",
+        "A close-up view of a child's face, highlighting its delicate eyelashes, iris, and eyebrow.",
+        "A close-up view of a child's face, highlighting its delicate eyelashes, iris, and eyebrow.",
+        "A nude woman lying on her stomach on a bed covered with white sheets. She has blonde hair and is looking directly at the camera with a slight smile. There is a black cord lying next to her.",
+        "The image shows a nude person lying on a bed with their legs spread apart. They appear to be sleeping peacefully. To the right of the person, there is a window with blinds partially drawn, allowing natural light to enter the room. Through the window, we can see an outdoor setting with buildings and lights, suggesting the location might be near a coastal area.",
+        "The image shows a nude person lying on a bed covered with a sheet. The person appears to be relaxed, with their arms stretched out to the sides. There are no visible gestures or expressions on the person's body. The lighting in the room is dim, creating a peaceful atmosphere.",
+        "A nude woman poses confidently in a kitchen setting. She wears black thigh-high stockings and has her hair styled in loose waves. On her cheek, she has a small red nail polish. In the background, there is a kitchen counter with various items on it, including a jar containing herbs and spices.",
+        "A nude woman stands confidently in a bedroom setting, touching herself with her hand. She wears underwear and has blonde hair cascading down her shoulders. The room is furnished with a bed covered in blankets and pillows, and a window lets in natural light.",
+        "A nude woman lying on a bed covered with a white sheet. She has blonde hair and striking blue eyes.",
+        "A nude woman lying on a bed covered with a white sheet. She appears relaxed and comfortable in her surroundings.",
+        "In the image, we can see a nude person lying on a bed covered with a white sheet. The person appears relaxed, with their legs spread apart and their head resting on their hand. The room is dimly lit, creating a peaceful atmosphere.",
+        "A beautiful young woman poses nude on a bed, surrounded by lush greenery and illuminated by a soft light source. She wears comfortable lingerie and has a radiant smile on her face.",
+        "In the image, we can see a person lying on a bed covered with a blanket. The person is wearing underwear and has their legs spread apart. They are holding something in their hand, which appears to be a condom. To the left of the person, there is a laptop placed on a surface. The room has a window with blinds partially drawn.",
+        "This image showcases a nude person lying on a bed covered with a sheet. The person is wearing underwear and appears to be relaxed. There is another person visible at the bottom of the image, but their features are not clearly defined.",
+        "The image shows a person lying down under a blanket, illuminated by a soft light source. The blanket appears to be made of a soft material, possibly cotton or linen, and has a subtle texture. The person's legs are spread apart, revealing a portion of their stomach. The image has a slightly blurry quality due to the depth of field, which creates a dreamy atmosphere.",
+        "A nude woman stands confidently in a bedroom setting, touching her breasts with both hands. She wears earrings and has blonde hair cascading down her shoulders. To her right, there is a bed adorned with pillows and blankets. In the background, there's a window letting in natural light, illuminating the room.",
+        "A nude woman lies on her stomach on a wooden floor in a bedroom setting. She is wearing white underwear and has blonde hair styled in loose waves. Behind her is a bed covered with a gray blanket and several pillows. To the left of the bed, there is a dresser with a mirror above it, and on top of the dresser, there appears to contain a plant. To its right, there's a mirror reflecting a window with intricate designs. Above the window, there seems to be a painting hanging on the wall.",
+        "A nude woman lying on her stomach on a bed covered with blankets. She has brown hair and is wearing a red bow around her neck. There is a mirror on the wall behind her reflecting her image.",
+        "This image showcases a nude person lying on a bed covered with a marbled sheet. The person is wearing a black outfit adorned with sparkling sequins. The lighting in the room is dim, creating a mysterious atmosphere.",
+        "The image showcases a person lying on their stomach, covered in soap bubbles rising from their skin. Their skin appears moist and smooth, and there are droplets of soap scattered across their abdomen. Additionally, there is a protrusion protruding from their stomach.",
+        "A close-up view of my penis, revealing its smooth skin texture and shiny surface.",
+        "In the image, we can see a person lying on a bed covered with a gray blanket. The person is wearing white underwear and has their legs spread apart. To the left of the bed, there is a television mounted on the wall. Additionally, there are some clothes scattered around the room.",
+        "In the image, we can see a nude person lying on a bed covered with a white sheet. The person appears relaxed and comfortable, with their arms resting on their stomach. To the left of the person, there's a vase filled with delicate flowers, adding a touch of elegance to the scene. The room itself is dimly lit, creating a peaceful atmosphere.",
+        "A nude woman lying on a bed next to a window adorned with flowers. She appears relaxed and comfortable.",
+        "In the image, we can see a nude toddler lying on a bed covered with a white sheet. The toddler appears to be sleeping peacefully, with their eyes closed and their head resting on their elbow. The room is dimly lit, creating a cozy atmosphere. To the right of the toddler, there's a window letting in natural light, illuminating the room. On the window sill, there are three white flowers adding a touch of elegance to the space.",
+        "In the image, we can see a person lying down with their stomach exposed. They are holding onto their stomach with their fingers, revealing a portion of their stomach. The person appears relaxed and comfortable in their surroundings.",
+        "A nude woman lying on a bed next to a window with curtains partially drawn. There are flowers in a vase on the left side of the image. The woman appears relaxed and comfortable.",
+        "A nude woman lying on her stomach on a bed covered with white sheets. She has blonde hair and is looking directly at the camera with a slight smile."
+      ]
+    },
+    {
+      "id": 20,
+      "type": "Text Concatenate",
+      "pos": [
+        1236.730224609375,
+        123.41425323486328
+      ],
+      "size": [
+        270,
+        142
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "text_a",
+          "shape": 7,
+          "type": "STRING",
+          "link": 24
+        },
+        {
+          "name": "text_b",
+          "shape": 7,
+          "type": "STRING",
+          "link": 23
+        },
+        {
+          "name": "text_c",
+          "shape": 7,
+          "type": "STRING",
+          "link": null
+        },
+        {
+          "name": "text_d",
+          "shape": 7,
+          "type": "STRING",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": [
+            19
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "was-node-suite-comfyui",
+        "ver": "1.0.2",
+        "Node name for S&R": "Text Concatenate"
+      },
+      "widgets_values": [
+        ", ",
+        "true"
+      ]
+    },
+    {
+      "id": 23,
+      "type": "String to Text",
+      "pos": [
+        1236.886474609375,
+        2.2331044673919678
+      ],
+      "size": [
+        270,
+        58
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "STRING",
+          "type": "STRING",
+          "links": [
+            24
+          ]
+        }
+      ],
+      "title": "Trigger Word",
+      "properties": {
+        "cnr_id": "was-node-suite-comfyui",
+        "ver": "1014f8a1477b8ae0144e16ed4fd6476cd109fb23",
+        "Node name for S&R": "String to Text"
+      },
+      "widgets_values": [
+        ""
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 24,
+      "type": "Note",
+      "pos": [
+        1529.8623046875,
+        -27.388364791870117
+      ],
+      "size": [
+        266.5790100097656,
+        88
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "Put Lora Trigger word Here"
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 17,
+      "type": "Note",
+      "pos": [
+        259.0947265625,
+        188.35891723632812
+      ],
+      "size": [
+        266.5790100097656,
+        88
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "Path to Image Folder, use absolute paths "
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 25,
+      "type": "Label (rgthree)",
+      "pos": [
+        192.2932891845703,
+        -191.96876525878906
+      ],
+      "size": [
+        1896.3714599609375,
+        90
+      ],
+      "flags": {
+        "allow_interaction": true
+      },
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "kijai Florance2 Dragon Diffusion Lora Captioner",
+      "properties": {
+        "fontSize": 90,
+        "fontFamily": "Arial",
+        "fontColor": "#ffffff",
+        "textAlign": "left",
+        "backgroundColor": "green",
+        "padding": 0,
+        "borderRadius": 0
+      },
+      "color": "#fff0",
+      "bgcolor": "#fff0"
+    },
+    {
+      "id": 1,
+      "type": "LoadImageListFromDir //Inspire",
+      "pos": [
+        251.9096221923828,
+        334.9548645019531
+      ],
+      "size": [
+        315,
+        194
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "shape": 6,
+          "type": "IMAGE",
+          "slot_index": 0,
+          "links": [
+            2,
+            3,
+            12
+          ]
+        },
+        {
+          "name": "MASK",
+          "shape": 6,
+          "type": "MASK",
+          "links": null
+        },
+        {
+          "name": "FILE PATH",
+          "shape": 6,
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-inspire-pack",
+        "ver": "ecf8ab6f588bc8442ff7720b383d085ecabbc407",
+        "Node name for S&R": "LoadImageListFromDir //Inspire"
+      },
+      "widgets_values": [
+        "F:\\database\\ak10hires",
+        0,
+        0,
+        false,
+        "None"
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 9,
+      "type": "Save Text File",
+      "pos": [
+        1566.5533447265625,
+        119.13188171386719
+      ],
+      "size": [
+        315,
+        246
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "pos": [
+            10,
+            12
+          ],
+          "link": 19
+        },
+        {
+          "name": "filename_prefix",
+          "type": "STRING",
+          "widget": {
+            "name": "filename_prefix"
+          },
+          "link": 7
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "was-node-suite-comfyui",
+        "ver": "1.0.2",
+        "Node name for S&R": "Save Text File"
+      },
+      "widgets_values": [
+        "F:\\database\\ak10hires\\New folder",
+        "ComfyUI",
+        "",
+        0,
+        ".txt",
+        "utf-8",
+        ""
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 14,
+      "type": "Image Save",
+      "pos": [
+        1565.236083984375,
+        417.2061767578125
+      ],
+      "size": [
+        324.1068420410156,
+        626
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 12
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": null
+        },
+        {
+          "name": "files",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "was-node-suite-comfyui",
+        "ver": "1.0.2",
+        "Node name for S&R": "Image Save"
+      },
+      "widgets_values": [
+        "F:\\database\\ak10hires\\New folder",
+        "",
+        "",
+        1,
+        "false",
+        "png",
+        300,
+        100,
+        "true",
+        "false",
+        "false",
+        "false",
+        "true",
+        "true",
+        "true"
+      ],
+      "color": "#232",
+      "bgcolor": "#353"
+    },
+    {
+      "id": 5,
+      "type": "DownloadAndLoadFlorence2Model",
+      "pos": [
+        735.9986572265625,
+        188.41368103027344
+      ],
+      "size": [
+        382.73687744140625,
+        130
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "lora",
+          "shape": 7,
+          "type": "PEFTLORA",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "florence2_model",
+          "type": "FL2MODEL",
+          "links": [
+            1
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-florence2",
+        "ver": "1.0.3",
+        "Node name for S&R": "DownloadAndLoadFlorence2Model"
+      },
+      "widgets_values": [
+        "ljnlonoljpiljm/florence-2-large-florence-2-large-nsfw-pretrain-gt",
+        "fp16",
+        "eager",
+        false
+      ],
+      "color": "#322",
+      "bgcolor": "#533"
+    },
+    {
+      "id": 18,
+      "type": "Note",
+      "pos": [
+        1894.470458984375,
+        155.63473510742188
+      ],
+      "size": [
+        266.5790100097656,
+        88
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "Path to output folder, use the full path as an example is in here for both the images and the text files. Do not play with the settings or you will break stuff."
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 19,
+      "type": "Note",
+      "pos": [
+        1898.3424072265625,
+        420.9348449707031
+      ],
+      "size": [
+        266.5790100097656,
+        88
+      ],
+      "flags": {
+        "collapsed": false
+      },
+      "order": 7,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "Path to output folder, use the full path as an example is in here for both the images and the text files. Do not play with the settings or you will break stuff."
+      ],
+      "color": "#432",
+      "bgcolor": "#653"
+    }
+  ],
+  "links": [
+    [
+      1,
+      5,
+      0,
+      4,
+      1,
+      "FL2MODEL"
+    ],
+    [
+      2,
+      1,
+      0,
+      4,
+      0,
+      "IMAGE"
+    ],
+    [
+      3,
+      1,
+      0,
+      6,
+      0,
+      "*"
+    ],
+    [
+      4,
+      6,
+      0,
+      7,
+      0,
+      "INT"
+    ],
+    [
+      7,
+      7,
+      0,
+      9,
+      1,
+      "STRING"
+    ],
+    [
+      12,
+      1,
+      0,
+      14,
+      0,
+      "IMAGE"
+    ],
+    [
+      15,
+      4,
+      2,
+      16,
+      0,
+      "STRING"
+    ],
+    [
+      19,
+      20,
+      0,
+      9,
+      0,
+      "STRING"
+    ],
+    [
+      23,
+      16,
+      0,
+      20,
+      1,
+      "STRING"
+    ],
+    [
+      24,
+      23,
+      0,
+      20,
+      0,
+      "STRING"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 1.06107646095001,
+      "offset": [
+        -246.1037343994967,
+        130.60428489366367
+      ]
+    },
+    "frontendVersion": "1.22.2",
+    "VHS_latentpreview": false,
+    "VHS_latentpreviewrate": 0,
+    "ue_links": [],
+    "VHS_MetadataImage": true,
+    "VHS_KeepIntermediate": true
+  },
+  "version": 0.4
+}
