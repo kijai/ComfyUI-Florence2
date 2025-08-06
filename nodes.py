@@ -384,7 +384,7 @@ class Florence2Run:
                 max_new_tokens=max_new_tokens,
                 do_sample=do_sample,
                 num_beams=num_beams,
-                use_cache=False
+                use_cache=False,
             )
 
             results = processor.batch_decode(generated_ids, skip_special_tokens=False)[0]
@@ -434,18 +434,30 @@ class Florence2Run:
                     indexed_label = f"{index}.{label}"
                     
                     if fill_mask:
+                        # Ensure y1 is greater than or equal to y0 for mask drawing
+                        x0, y0, x1, y1 = bbox[0], bbox[1], bbox[2], bbox[3]
+                        if y1 < y0:
+                            y0, y1 = y1, y0
+                        if x1 < x0:
+                            x0, x1 = x1, x0
+                            
                         if str(index) in mask_indexes:
                             print("match index:", str(index), "in mask_indexes:", mask_indexes)
-                            mask_draw.rectangle([bbox[0], bbox[1], bbox[2], bbox[3]], fill=(255, 255, 255))
+                            mask_draw.rectangle([x0, y0, x1, y1], fill=(255, 255, 255))
                         if label in mask_indexes:
                             print("match label")
-                            mask_draw.rectangle([bbox[0], bbox[1], bbox[2], bbox[3]], fill=(255, 255, 255))
+                            mask_draw.rectangle([x0, y0, x1, y1], fill=(255, 255, 255))
 
                     # Create a Rectangle patch
+                    # Ensure y1 is greater than or equal to y0
+                    y0, y1 = bbox[1], bbox[3]
+                    if y1 < y0:
+                        y0, y1 = y1, y0
+                    
                     rect = patches.Rectangle(
-                        (bbox[0], bbox[1]),  # (x,y) - lower left corner
+                        (bbox[0], y0),  # (x,y) - lower left corner
                         bbox[2] - bbox[0],   # Width
-                        bbox[3] - bbox[1],   # Height
+                        y1 - y0,   # Height
                         linewidth=1,
                         edgecolor='r',
                         facecolor='none',
@@ -455,9 +467,16 @@ class Florence2Run:
                     text_width = len(label) * 6  # Adjust multiplier based on your font size
                     text_height = 12  # Adjust based on your font size
 
+                    # Get corrected coordinates
+                    x0, y0, x1, y1 = bbox[0], bbox[1], bbox[2], bbox[3]
+                    if y1 < y0:
+                        y0, y1 = y1, y0
+                    if x1 < x0:
+                        x0, x1 = x1, x0
+
                     # Initial text position
-                    text_x = bbox[0]
-                    text_y = bbox[1] - text_height  # Position text above the top-left of the bbox
+                    text_x = x0
+                    text_y = y0 - text_height  # Position text above the top-left of the bbox
 
                     # Adjust text_x if text is going off the left or right edge
                     if text_x < 0:
@@ -467,7 +486,7 @@ class Florence2Run:
 
                     # Adjust text_y if text is going off the top edge
                     if text_y < 0:
-                        text_y = bbox[3]  # Move text below the bottom-left of the bbox if it doesn't overlap with bbox
+                        text_y = y1  # Move text below the bottom-left of the bbox if it doesn't overlap with bbox
 
                     # Add the rectangle to the plot
                     ax.add_patch(rect)
@@ -584,20 +603,27 @@ class Florence2Run:
                     color = random.choice(colormap)
                     new_box = (np.array(box) * scale).tolist()
                     
-                    if fill_mask:
-                        color_with_opacity = ImageColor.getrgb(color) + (180,)
-                        draw.polygon(new_box, outline=color, fill=color_with_opacity, width=3)
-                    else:
-                        draw.polygon(new_box, outline=color, width=3)
-                    
-                    draw.text((new_box[0]+8, new_box[1]+2),
-                              "{}".format(label),
-                              align="right",
-                              font=font,
-                              fill=color)
-                    
-                    # Draw the mask
-                    mask_draw.polygon(new_box, outline="white", fill="white")
+                    # Ensure polygon coordinates are valid
+                    # For polygons, we need to make sure the points form a valid shape
+                    # This is a simple check to ensure the polygon has at least 3 points
+                    if len(new_box) >= 6:  # At least 3 points (x,y pairs)
+                        if fill_mask:
+                            color_with_opacity = ImageColor.getrgb(color) + (180,)
+                            draw.polygon(new_box, outline=color, fill=color_with_opacity, width=3)
+                        else:
+                            draw.polygon(new_box, outline=color, width=3)
+                        
+                        # Get the first point for text positioning
+                        text_x, text_y = new_box[0]+8, new_box[1]+2
+                        
+                        draw.text((text_x, text_y),
+                                  "{}".format(label),
+                                  align="right",
+                                  font=font,
+                                  fill=color)
+                        
+                        # Draw the mask
+                        mask_draw.polygon(new_box, outline="white", fill="white")
                 
                 image_pil = Image.alpha_composite(image_pil, overlay)
                 image_pil = image_pil.convert('RGB')
@@ -628,6 +654,7 @@ class Florence2Run:
                     max_new_tokens=max_new_tokens,
                     do_sample=do_sample,
                     num_beams=num_beams,
+                    use_cache=False,
                 )
 
                 results = processor.batch_decode(generated_ids, skip_special_tokens=False)[0]
