@@ -85,7 +85,7 @@ class DownloadAndLoadFlorence2Model:
                     'MiaoshouAI/Florence-2-base-PromptGen-v1.5',
                     'MiaoshouAI/Florence-2-large-PromptGen-v1.5',
                     'MiaoshouAI/Florence-2-base-PromptGen-v2.0',
-                    'MiaoshouAI/Florence-2-large-PromptGen-v2.0'
+                    'MiaoshouAI/Florence-2-large-PromptGen-v2.0',
                     'PJMixers-Images/Florence-2-base-Castollux-v0.5'
                     ],
                     {
