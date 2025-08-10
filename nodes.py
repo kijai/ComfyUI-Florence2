@@ -363,10 +363,7 @@ class Florence2Run:
         if (task not in ['referring_expression_segmentation', 'caption_to_phrase_grounding', 'docvqa']) and text_input:
             raise ValueError("Text input (prompt) is only supported for 'referring_expression_segmentation', 'caption_to_phrase_grounding', and 'docvqa'")
 
-        if text_input != "":
-            prompt = task_prompt + " " + text_input
-        else:
-            prompt = task_prompt
+        prompt = f"{task_prompt}{text_input}"
 
         image = image.permute(0, 3, 1, 2)
         
