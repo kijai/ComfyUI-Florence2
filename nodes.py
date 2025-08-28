@@ -411,8 +411,9 @@ class Florence2Run:
             parsed_answer = processor.post_process_generation(results, task=task_prompt, image_size=(W, H))
 
             if task == 'region_caption' or task == 'dense_region_caption' or task == 'caption_to_phrase_grounding' or task == 'region_proposal':           
-                fig = plt.figure(figsize=(W / 100, H / 100), dpi=100)
-                ax = fig.add_axes([0, 0, 1, 1])
+                plt.figure(figsize=(W / 100, H / 100), dpi=100)
+                ax = plt.subplot(111)
+                fig = plt.gcf()
                 ax.imshow(image_pil)
                 bboxes = parsed_answer[task_prompt]['bboxes']
                 labels = parsed_answer[task_prompt]['labels']
