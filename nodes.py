@@ -411,9 +411,15 @@ class Florence2Run:
             parsed_answer = processor.post_process_generation(results, task=task_prompt, image_size=(W, H))
 
             if task == 'region_caption' or task == 'dense_region_caption' or task == 'caption_to_phrase_grounding' or task == 'region_proposal':           
-                fig, ax = plt.subplots(figsize=(W / 100, H / 100), dpi=100)
-                fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
-                ax.imshow(image_pil)
+                # Use PIL for drawing instead of matplotlib to avoid backend issues
+                annotated_image_pil = image_pil.copy()
+                draw = ImageDraw.Draw(annotated_image_pil)
+                
+                try:
+                    font = ImageFont.load_default().font_variant(size=16)
+                except:
+                    font = ImageFont.load_default()
+                
                 bboxes = parsed_answer[task_prompt]['bboxes']
                 labels = parsed_answer[task_prompt]['labels']
 
@@ -434,14 +440,14 @@ class Florence2Run:
                     # Modify the label to include the index
                     indexed_label = f"{index}.{label}"
                     
+                    # Get corrected coordinates
+                    x0, y0, x1, y1 = bbox[0], bbox[1], bbox[2], bbox[3]
+                    if y1 < y0:
+                        y0, y1 = y1, y0
+                    if x1 < x0:
+                        x0, x1 = x1, x0
+                    
                     if fill_mask:
-                        # Ensure y1 is greater than or equal to y0 for mask drawing
-                        x0, y0, x1, y1 = bbox[0], bbox[1], bbox[2], bbox[3]
-                        if y1 < y0:
-                            y0, y1 = y1, y0
-                        if x1 < x0:
-                            x0, x1 = x1, x0
-                            
                         if str(index) in mask_indexes:
                             print("match index:", str(index), "in mask_indexes:", mask_indexes)
                             mask_draw.rectangle([x0, y0, x1, y1], fill=(255, 255, 255))
@@ -449,35 +455,17 @@ class Florence2Run:
                             print("match label")
                             mask_draw.rectangle([x0, y0, x1, y1], fill=(255, 255, 255))
 
-                    # Create a Rectangle patch
-                    # Ensure y1 is greater than or equal to y0
-                    y0, y1 = bbox[1], bbox[3]
-                    if y1 < y0:
-                        y0, y1 = y1, y0
+                    # Draw bounding box
+                    color = random.choice(colormap) if len(image) == 1 else 'red'
+                    draw.rectangle([x0, y0, x1, y1], outline=color, width=2)
                     
-                    rect = patches.Rectangle(
-                        (bbox[0], y0),  # (x,y) - lower left corner
-                        bbox[2] - bbox[0],   # Width
-                        y1 - y0,   # Height
-                        linewidth=1,
-                        edgecolor='r',
-                        facecolor='none',
-                        label=indexed_label
-                    )
-                     # Calculate text width with a rough estimation
-                    text_width = len(label) * 6  # Adjust multiplier based on your font size
-                    text_height = 12  # Adjust based on your font size
-
-                    # Get corrected coordinates
-                    x0, y0, x1, y1 = bbox[0], bbox[1], bbox[2], bbox[3]
-                    if y1 < y0:
-                        y0, y1 = y1, y0
-                    if x1 < x0:
-                        x0, x1 = x1, x0
-
-                    # Initial text position
+                    # Calculate text position
+                    text_width = len(indexed_label) * 8  # Rough estimation
+                    text_height = 16
+                    
+                    # Initial text position (above bbox)
                     text_x = x0
-                    text_y = y0 - text_height  # Position text above the top-left of the bbox
+                    text_y = y0 - text_height - 2
 
                     # Adjust text_x if text is going off the left or right edge
                     if text_x < 0:
@@ -487,20 +475,15 @@ class Florence2Run:
 
                     # Adjust text_y if text is going off the top edge
                     if text_y < 0:
-                        text_y = y1  # Move text below the bottom-left of the bbox if it doesn't overlap with bbox
+                        text_y = y1 + 2  # Move text below the bbox
 
-                    # Add the rectangle to the plot
-                    ax.add_patch(rect)
-                    facecolor = random.choice(colormap) if len(image) == 1 else 'red'
-                    # Add the label
-                    plt.text(
-                        text_x,
-                        text_y,
-                        indexed_label,
-                        color='white',
-                        fontsize=12,
-                        bbox=dict(facecolor=facecolor, alpha=0.5)
-                    )
+                    # Draw text background
+                    text_bbox = draw.textbbox((text_x, text_y), indexed_label, font=font)
+                    draw.rectangle(text_bbox, fill=color)
+                    
+                    # Draw text
+                    draw.text((text_x, text_y), indexed_label, fill='white', font=font)
+
                 if fill_mask:             
                     mask_tensor = F.to_tensor(mask_layer)
                     mask_tensor = mask_tensor.unsqueeze(0).permute(0, 2, 3, 1).cpu().float()
@@ -508,17 +491,6 @@ class Florence2Run:
                     mask_tensor = mask_tensor.repeat(1, 1, 1, 3)
                     mask_tensor = mask_tensor[:, :, :, 0]
                     out_masks.append(mask_tensor)           
-
-                # Remove axis and padding around the image
-                ax.axis('off')
-                ax.margins(0,0)
-                ax.get_xaxis().set_major_locator(plt.NullLocator())
-                ax.get_yaxis().set_major_locator(plt.NullLocator())
-                fig.canvas.draw() 
-                buf = io.BytesIO()
-                plt.savefig(buf, format='png', pad_inches=0)
-                buf.seek(0)
-                annotated_image_pil = Image.open(buf)
 
                 annotated_image_tensor = F.to_tensor(annotated_image_pil)
                 out_tensor = annotated_image_tensor[:3, :, :].unsqueeze(0).permute(0, 2, 3, 1).cpu().float()
@@ -529,10 +501,7 @@ class Florence2Run:
                 else:
                     out_data.append(bboxes)
 
-                
                 pbar.update(1)
-    
-                plt.close(fig)
 
             elif task == 'referring_expression_segmentation':
                 # Create a new black image
