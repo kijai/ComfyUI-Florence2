@@ -206,8 +206,11 @@ class DownloadAndLoadFlorence2Model:
         if version.parse(transformers.__version__) >= version.parse('5.0.0'):
             model, processor = load_model(model_path, attention, dtype, offload_device)
         else:
+            import inspect
             from .modeling_florence2 import Florence2ForConditionalGeneration
-            model = Florence2ForConditionalGeneration.from_pretrained(model_path, attn_implementation=attention, dtype=dtype).to(offload_device)
+            _sig = inspect.signature(Florence2ForConditionalGeneration.from_pretrained)
+            _dtype_kwarg = 'torch_dtype' if 'torch_dtype' in _sig.parameters else 'dtype'
+            model = Florence2ForConditionalGeneration.from_pretrained(model_path, attn_implementation=attention, **{_dtype_kwarg: dtype}).to(offload_device)
             processor = AutoProcessor.from_pretrained(model_path, trust_remote_code=True)
 
         if lora is not None:
@@ -306,8 +309,11 @@ class Florence2ModelLoader:
         if version.parse(transformers.__version__) >= version.parse('5.0.0'):
             model, processor = load_model(model_path, attention, dtype, offload_device)
         else:
+            import inspect
             from .modeling_florence2 import Florence2ForConditionalGeneration
-            model = Florence2ForConditionalGeneration.from_pretrained(model_path, attn_implementation=attention, dtype=dtype).to(offload_device)
+            _sig = inspect.signature(Florence2ForConditionalGeneration.from_pretrained)
+            _dtype_kwarg = 'torch_dtype' if 'torch_dtype' in _sig.parameters else 'dtype'
+            model = Florence2ForConditionalGeneration.from_pretrained(model_path, attn_implementation=attention, **{_dtype_kwarg: dtype}).to(offload_device)
             processor = AutoProcessor.from_pretrained(model_path, trust_remote_code=True)
 
         if lora is not None:
