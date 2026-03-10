@@ -206,12 +206,28 @@ class DownloadAndLoadFlorence2Model:
         if version.parse(transformers.__version__) >= version.parse('5.0.0'):
             model, processor = load_model(model_path, attention, dtype, offload_device)
         else:
-            import inspect
             from .modeling_florence2 import Florence2ForConditionalGeneration
-            _sig = inspect.signature(Florence2ForConditionalGeneration.from_pretrained)
-            _dtype_kwarg = 'torch_dtype' if 'torch_dtype' in _sig.parameters else 'dtype'
-            model = Florence2ForConditionalGeneration.from_pretrained(model_path, attn_implementation=attention, **{_dtype_kwarg: dtype}).to(offload_device)
-            processor = AutoProcessor.from_pretrained(model_path, trust_remote_code=True)
+            processor = AutoProcessor.from_pretrained(model_path, trust_remote_code=True)            
+            try:
+                # 优先尝试当前的行业标准参数 torch_dtype
+                model = Florence2ForConditionalGeneration.from_pretrained(
+                    model_path, 
+                    attn_implementation=attention, 
+                    torch_dtype=dtype
+                ).to(offload_device)
+            except TypeError as e:
+                # 如果底层抛出 TypeError 且明确拒绝了 torch_dtype，则动态降级使用 dtype
+                if "unexpected keyword argument" in str(e) and "torch_dtype" in str(e):
+                    print("Fallback: 'torch_dtype' rejected, attempting to use 'dtype' instead.")
+                    model = Florence2ForConditionalGeneration.from_pretrained(
+                        model_path, 
+                        attn_implementation=attention, 
+                        dtype=dtype
+                    ).to(offload_device)
+                else:
+                    # 如果是其他未知的 TypeError，不要吞掉异常，正常抛出以免掩盖真正的问题
+                    raise e
+
 
         if lora is not None:
             from peft import PeftModel
@@ -309,12 +325,28 @@ class Florence2ModelLoader:
         if version.parse(transformers.__version__) >= version.parse('5.0.0'):
             model, processor = load_model(model_path, attention, dtype, offload_device)
         else:
-            import inspect
             from .modeling_florence2 import Florence2ForConditionalGeneration
-            _sig = inspect.signature(Florence2ForConditionalGeneration.from_pretrained)
-            _dtype_kwarg = 'torch_dtype' if 'torch_dtype' in _sig.parameters else 'dtype'
-            model = Florence2ForConditionalGeneration.from_pretrained(model_path, attn_implementation=attention, **{_dtype_kwarg: dtype}).to(offload_device)
             processor = AutoProcessor.from_pretrained(model_path, trust_remote_code=True)
+            
+            try:
+                # 优先尝试当前的行业标准参数 torch_dtype
+                model = Florence2ForConditionalGeneration.from_pretrained(
+                    model_path, 
+                    attn_implementation=attention, 
+                    torch_dtype=dtype
+                ).to(offload_device)
+            except TypeError as e:
+                # 如果底层抛出 TypeError 且明确拒绝了 torch_dtype，则动态降级使用 dtype
+                if "unexpected keyword argument" in str(e) and "torch_dtype" in str(e):
+                    print("Fallback: 'torch_dtype' rejected, attempting to use 'dtype' instead.")
+                    model = Florence2ForConditionalGeneration.from_pretrained(
+                        model_path, 
+                        attn_implementation=attention, 
+                        dtype=dtype
+                    ).to(offload_device)
+                else:
+                    # 如果是其他未知的 TypeError，不要吞掉异常，正常抛出以免掩盖真正的问题
+                    raise e
 
         if lora is not None:
             from peft import PeftModel
