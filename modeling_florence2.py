@@ -40,8 +40,7 @@ from transformers.utils import (
     is_flash_attn_2_available,
     logging,
     replace_return_docstrings,
-    is_flash_attn_2_available,
-    is_flash_attn_greater_or_equal_2_10,
+    is_flash_attn_greater_or_equal as is_flash_attn_greater_or_equal_2_10,
 )
 from .configuration_florence2 import Florence2Config 
 from .configuration_florence2 import Florence2LanguageConfig
@@ -2503,12 +2502,25 @@ class Florence2VisionModelWithProjection(Florence2PreTrainedModel):
         if self.image_pos_embed is not None:
             x = x.view(batch_size * T, -1, x.shape[-1])
             num_tokens = x.shape[-2]
-            h, w = int(num_tokens ** 0.5), int(num_tokens ** 0.5)
-            assert h * w == num_tokens, 'only support square feature maps for now'
+                
+            # --- FINAL ROBUST PATCH START ---
+            orig_h, orig_w = pixel_values.shape[2], pixel_values.shape[3]
+            aspect_ratio = orig_w / orig_h
+            h = max(1, int(math.sqrt(num_tokens / aspect_ratio)))
+            w = num_tokens // h
+            
+            if h * w != num_tokens:
+                h = num_tokens // w
+                if h * w != num_tokens:
+                    h = int(num_tokens ** 0.5)
+                    w = num_tokens // h
+            # --- FINAL ROBUST PATCH END ---
+
             x = x.view(batch_size * T, h, w, x.shape[-1])
             pos_embed = self.image_pos_embed(x)
             x = x + pos_embed
-            x = x.view(batch_size, T * h*w, x.shape[-1])
+            x = x.view(batch_size, T * h * w, x.shape[-1])
+            
 
         if self.visual_temporal_embed is not None:
             visual_temporal_embed = self.visual_temporal_embed(x.view(batch_size, T, -1, x.shape[-1])[:, :, 0])
@@ -2623,12 +2635,24 @@ class Florence2ForConditionalGeneration(Florence2PreTrainedModel, GenerationMixi
         if self.image_pos_embed is not None:
             x = x.view(batch_size * T, -1, x.shape[-1])
             num_tokens = x.shape[-2]
-            h, w = int(num_tokens ** 0.5), int(num_tokens ** 0.5)
-            assert h * w == num_tokens, 'only support square feature maps for now'
+                
+            # --- FINAL ROBUST PATCH START ---
+            orig_h, orig_w = pixel_values.shape[2], pixel_values.shape[3]
+            aspect_ratio = orig_w / orig_h
+            h = max(1, int(math.sqrt(num_tokens / aspect_ratio)))
+            w = num_tokens // h
+            
+            if h * w != num_tokens:
+                h = num_tokens // w
+                if h * w != num_tokens:
+                    h = int(num_tokens ** 0.5)
+                    w = num_tokens // h
+            # --- FINAL ROBUST PATCH END ---
+
             x = x.view(batch_size * T, h, w, x.shape[-1])
             pos_embed = self.image_pos_embed(x)
             x = x + pos_embed
-            x = x.view(batch_size, T * h*w, x.shape[-1])
+            x = x.view(batch_size, T * h * w, x.shape[-1])
 
         if self.visual_temporal_embed is not None:
             visual_temporal_embed = self.visual_temporal_embed(x.view(batch_size, T, -1, x.shape[-1])[:, :, 0])
