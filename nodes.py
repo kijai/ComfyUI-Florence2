@@ -13,79 +13,90 @@ import numpy as np
 import re
 from pathlib import Path
 
-from transformers.dynamic_module_utils import get_imports
-import transformers
-from packaging import version
-
 from safetensors.torch import save_file
+import comfy.ops
+import comfy.model_patcher
 
-def load_model(model_path: str, attention: str, dtype: torch.dtype, offload_device: torch.device):
-    from .modeling_florence2 import Florence2ForConditionalGeneration, Florence2Config
-    from transformers import CLIPImageProcessor, BartTokenizerFast
-    from .processing_florence2 import Florence2Processor
-    from accelerate import init_empty_weights
-    from accelerate.utils import set_module_tensor_to_device
+def apply_florence2_lora(patcher, lora_path, strength=1.0):
+    """Apply a peft-style LoRA adapter to a Florence2 ModelPatcher."""
+    import json
+    lora_sd = load_torch_file(os.path.join(lora_path, "adapter_model.safetensors"))
+    config = json.load(open(os.path.join(lora_path, "adapter_config.json")))
+    lora_alpha = config.get("lora_alpha", 32)
 
-    config = Florence2Config.from_pretrained(model_path)
-    config._attn_implementation = attention
-    with init_empty_weights():
-        model = Florence2ForConditionalGeneration(config)
+    # Convert peft keys (base_model.model.X.lora_A/B.weight) to comfy lora format (X.lora_down/up.weight)
+    converted = {}
+    for k, v in lora_sd.items():
+        k = k.replace("base_model.model.", "")
+        k = k.replace("lora_A", "lora_down").replace("lora_B", "lora_up")
+        converted[k] = v
 
+    # Add alpha entries so comfy's lora loader applies correct scaling
+    seen_prefixes = set()
+    for k in list(converted.keys()):
+        prefix = k.rsplit(".", 2)[0]  # e.g. "language_model.model.encoder.layers.0.self_attn.q_proj"
+        if prefix not in seen_prefixes:
+            seen_prefixes.add(prefix)
+            converted[f"{prefix}.alpha"] = torch.tensor(lora_alpha, dtype=torch.float32)
+
+    # Build key map: lora prefix -> model weight key
+    model_sd = patcher.model.state_dict()
+    key_map = {}
+    for k in model_sd:
+        lora_prefix = k.replace(".weight", "")
+        if f"{lora_prefix}.lora_down.weight" in converted:
+            key_map[lora_prefix] = k
+
+    import comfy.lora
+    patches = comfy.lora.load_lora(converted, key_map)
+    patcher.add_patches(patches, strength_patch=strength)
+    return patcher
+
+
+def load_florence2(model_path, dtype):
+    from .model.config import Florence2Config
+    from .model.model import Florence2
+    from .model.processing import Processor
+
+    load_device = mm.text_encoder_device()
+    offload_device = mm.text_encoder_offload_device()
+
+    config_path = os.path.join(model_path, "config.json")
     checkpoint_path = os.path.join(model_path, "model.safetensors")
     if not os.path.exists(checkpoint_path):
         checkpoint_path = os.path.join(model_path, "pytorch_model.bin")
-    if os.path.exists(checkpoint_path):
-        state_dict = load_torch_file(checkpoint_path)
-    else:
+    if not os.path.exists(checkpoint_path):
         raise FileNotFoundError(f"No model weights found at {model_path}")
 
-    key_mapping = {}
-    if "language_model.model.shared.weight" in state_dict:
-        key_mapping["language_model.model.encoder.embed_tokens.weight"] = "language_model.model.shared.weight"
-        key_mapping["language_model.model.decoder.embed_tokens.weight"] = "language_model.model.shared.weight"
+    if os.path.exists(config_path):
+        config = Florence2Config.from_json(config_path)
+    else:
+        sd = load_torch_file(checkpoint_path)
+        config = Florence2Config.from_state_dict(sd)
+        sd = None
 
-    for name, param in model.named_parameters():
-        # Check if we need to remap the key
-        actual_key = key_mapping.get(name, name)
+    model = Florence2(config, dtype=dtype, device="cpu", operations=comfy.ops.manual_cast)
 
-        if actual_key in state_dict:
-            set_module_tensor_to_device(model, name, offload_device, value=state_dict[actual_key].to(dtype))
-        else:
-            print(f"Parameter {name} not found in state_dict.")
+    sd = load_torch_file(checkpoint_path)
+    for key in ["language_model.model.encoder.embed_tokens.weight",
+                "language_model.model.decoder.embed_tokens.weight"]:
+        if key in sd and "language_model.model.shared.weight" in sd:
+            sd.pop(key, None)
 
-    # Tie embeddings
+    m, u = model.load_state_dict(sd, strict=False)
+    if m:
+        print(f"Florence2 missing keys: {m}")
+    if u:
+        print(f"Florence2 unexpected keys: {u}")
+    del sd
+
     model.language_model.tie_weights()
-    model = model.eval().to(dtype).to(offload_device)
+    model = model.eval()
 
-    # Create image processor
-    image_processor = CLIPImageProcessor(
-        do_resize=True,
-        size={"height": 768, "width": 768},
-        resample=3,  # BICUBIC
-        do_center_crop=False,
-        do_rescale=True,
-        rescale_factor=1/255.0,
-        do_normalize=True,
-        image_mean=[0.485, 0.456, 0.406],
-        image_std=[0.229, 0.224, 0.225],
-    )
-    image_processor.image_seq_length = 577
+    patcher = comfy.model_patcher.ModelPatcher(model, load_device=load_device, offload_device=offload_device)
 
-    # Create tokenizer - Florence2 uses BART tokenizer
-    tokenizer = BartTokenizerFast.from_pretrained(model_path)
-    processor = Florence2Processor(image_processor=image_processor, tokenizer=tokenizer)
-    return model, processor
-
-def fixed_get_imports(filename: str | os.PathLike) -> list[str]:
-    try:
-        if not str(filename).endswith("modeling_florence2.py"):
-            return get_imports(filename)
-        imports = get_imports(filename)
-        imports.remove("flash_attn")
-    except:
-        print(f"No flash_attn import to remove")
-        pass
-    return imports
+    processor = Processor(model_path=model_path)
+    return patcher, processor
 
 
 def create_path_dict(paths: list[str], predicate: Callable[[Path], bool] = lambda _: True) -> dict[str, str]:
@@ -124,7 +135,6 @@ os.makedirs(model_directory, exist_ok=True)
 # Ensure ComfyUI knows about the LLM model path
 folder_paths.add_model_folder_path("LLM", model_directory)
 
-from transformers import AutoProcessor, set_seed
 
 model_list = [
             'microsoft/Florence-2-base',
@@ -152,11 +162,6 @@ class DownloadAndLoadFlorence2Model:
                     {
                     "default": 'fp16'
                     }),
-            "attention": (
-                    [ 'flash_attention_2', 'sdpa', 'eager'],
-                    {
-                    "default": 'sdpa'
-                    }),
             },
             "optional": {
                 "lora": ("PEFTLORA",),
@@ -169,7 +174,7 @@ class DownloadAndLoadFlorence2Model:
     FUNCTION = "loadmodel"
     CATEGORY = "Florence2"
 
-    def loadmodel(self, model, precision, attention, lora=None, convert_to_safetensors=False):
+    def loadmodel(self, model, precision, lora=None, convert_to_safetensors=False, attention=None, **kwargs):
         if model not in model_list:
             raise ValueError(f"Model {model} is not in the supported model list.")
 
@@ -184,8 +189,6 @@ class DownloadAndLoadFlorence2Model:
             snapshot_download(repo_id=model,
                             local_dir=model_path,
                             local_dir_use_symlinks=False)
-
-        print(f"Florence2 using {attention} for attention")
 
         if convert_to_safetensors:
             model_weight_path = os.path.join(model_path, 'pytorch_model.bin')
@@ -203,23 +206,13 @@ class DownloadAndLoadFlorence2Model:
                         os.remove(model_weight_path)
                         print(f"Original {model_weight_path} file deleted.")
 
-        if version.parse(transformers.__version__) >= version.parse('5.0.0'):
-            model, processor = load_model(model_path, attention, dtype, offload_device)
-        else:
-            from .modeling_florence2 import Florence2ForConditionalGeneration
-            try:
-                model = Florence2ForConditionalGeneration.from_pretrained(model_path, attn_implementation=attention, torch_dtype=dtype).to(offload_device)
-            except TypeError:
-                model = Florence2ForConditionalGeneration.from_pretrained(model_path, attn_implementation=attention, dtype=dtype).to(offload_device)
-            processor = AutoProcessor.from_pretrained(model_path, trust_remote_code=True)
+        patcher, processor = load_florence2(model_path, dtype)
 
         if lora is not None:
-            from peft import PeftModel
-            adapter_name = lora
-            model = PeftModel.from_pretrained(model, adapter_name, trust_remote_code=True)
+            apply_florence2_lora(patcher, lora)
 
         florence2_model = {
-            'model': model,
+            'patcher': patcher,
             'processor': processor,
             'dtype': dtype
             }
@@ -268,11 +261,6 @@ class Florence2ModelLoader:
         return {"required": {
             "model": ([*s.model_paths], {"tooltip": "models are expected to be in Comfyui/models/LLM folder"}),
             "precision": (['fp16','bf16','fp32'],),
-            "attention": (
-                    [ 'flash_attention_2', 'sdpa', 'eager'],
-                    {
-                    "default": 'sdpa'
-                    }),
             },
             "optional": {
                 "lora": ("PEFTLORA",),
@@ -285,11 +273,10 @@ class Florence2ModelLoader:
     FUNCTION = "loadmodel"
     CATEGORY = "Florence2"
 
-    def loadmodel(self, model, precision, attention, lora=None, convert_to_safetensors=False):
+    def loadmodel(self, model, precision, lora=None, convert_to_safetensors=False, attention=None, **kwargs):
         dtype = {"bf16": torch.bfloat16, "fp16": torch.float16, "fp32": torch.float32}[precision]
         model_path = Florence2ModelLoader.model_paths.get(model)
         print(f"Loading model from {model_path}")
-        print(f"Florence2 using {attention} for attention")
         if convert_to_safetensors:
             model_weight_path = os.path.join(model_path, 'pytorch_model.bin')
             if os.path.exists(model_weight_path):
@@ -306,29 +293,19 @@ class Florence2ModelLoader:
                         os.remove(model_weight_path)
                         print(f"Original {model_weight_path} file deleted.")
 
-        if version.parse(transformers.__version__) >= version.parse('5.0.0'):
-            model, processor = load_model(model_path, attention, dtype, offload_device)
-        else:
-            from .modeling_florence2 import Florence2ForConditionalGeneration
-            try:
-                model = Florence2ForConditionalGeneration.from_pretrained(model_path, attn_implementation=attention, torch_dtype=dtype).to(offload_device)
-            except TypeError:
-                model = Florence2ForConditionalGeneration.from_pretrained(model_path, attn_implementation=attention, dtype=dtype).to(offload_device)
-            processor = AutoProcessor.from_pretrained(model_path, trust_remote_code=True)
+        patcher, processor = load_florence2(model_path, dtype)
 
         if lora is not None:
-            from peft import PeftModel
-            adapter_name = lora
-            model = PeftModel.from_pretrained(model, adapter_name, trust_remote_code=True)
+            apply_florence2_lora(patcher, lora)
 
         florence2_model = {
-            'model': model,
+            'patcher': patcher,
             'processor': processor,
             'dtype': dtype
             }
-   
+
         return (florence2_model,)
-    
+
 class Florence2Run:
     @classmethod
     def INPUT_TYPES(s):
@@ -390,12 +367,13 @@ class Florence2Run:
         annotated_image_tensor = None
         mask_tensor = None
         processor = florence2_model['processor']
-        model = florence2_model['model']
+        patcher = florence2_model['patcher']
         dtype = florence2_model['dtype']
-        model.to(device)
+        mm.load_model_gpu(patcher)
+        model = patcher.model
 
         if seed:
-            set_seed(self.hash_seed(seed))
+            torch.manual_seed(self.hash_seed(seed))
 
         colormap = ['blue','orange','green','purple','brown','pink','olive','cyan','red',
                     'lime','indigo','violet','aqua','magenta','gold','tan','skyblue']
@@ -436,15 +414,15 @@ class Florence2Run:
         pbar = ProgressBar(len(image))
         for img in image:
             image_pil = F.to_pil_image(img)
-            inputs = processor(text=prompt, images=image_pil, return_tensors="pt", do_rescale=False).to(dtype).to(device)
+            inputs = processor(text=prompt, images=img.unsqueeze(0))
+            load_device = patcher.load_device
 
             generated_ids = model.generate(
-                input_ids=inputs["input_ids"],
-                pixel_values=inputs["pixel_values"],
+                input_ids=inputs["input_ids"].to(load_device),
+                pixel_values=inputs["pixel_values"].to(dtype=dtype, device=load_device),
                 max_new_tokens=max_new_tokens,
                 do_sample=do_sample,
                 num_beams=num_beams,
-                use_cache=False,
             )
 
             results = processor.batch_decode(generated_ids, skip_special_tokens=False)[0]
@@ -707,14 +685,13 @@ class Florence2Run:
                     raise ValueError("Text input (prompt) is required for 'docvqa'")
                 prompt = "<DocVQA> " + text_input
 
-                inputs = processor(text=prompt, images=image_pil, return_tensors="pt", do_rescale=False).to(dtype).to(device)
+                inputs = processor(text=prompt, images=img.unsqueeze(0))
                 generated_ids = model.generate(
-                    input_ids=inputs["input_ids"],
-                    pixel_values=inputs["pixel_values"],
+                    input_ids=inputs["input_ids"].to(load_device),
+                    pixel_values=inputs["pixel_values"].to(dtype=dtype, device=load_device),
                     max_new_tokens=max_new_tokens,
                     do_sample=do_sample,
                     num_beams=num_beams,
-                    use_cache=False,
                 )
 
                 results = processor.batch_decode(generated_ids, skip_special_tokens=False)[0]
@@ -739,8 +716,8 @@ class Florence2Run:
             out_mask_tensor = torch.zeros((1,64,64), dtype=torch.float32, device="cpu")
 
         if not keep_model_loaded:
-            print("Offloading model...")
-            model.to(offload_device)
+            keep = [x for x in mm.current_loaded_models if x.model is not patcher]
+            mm.free_memory(1e30, patcher.load_device, keep_loaded=keep)
             mm.soft_empty_cache()
         
         return (out_tensor, out_mask_tensor, out_results, out_data)
