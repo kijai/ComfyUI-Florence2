@@ -428,7 +428,7 @@ class Florence2(nn.Module):
                     forced_bos_token_id=forced_bos_token_id, max_new_tokens=max_new_tokens)
 
         if num_beams > 1:
-            return self._beam_search(**args, num_beams=num_beams)
+            return self._beam_search(**args, num_beams=num_beams, do_sample=do_sample)
         else:
             return self._greedy_or_sample(**args, do_sample=do_sample, temperature=temperature)
 
@@ -472,7 +472,7 @@ class Florence2(nn.Module):
 
     def _beam_search(self, encoder_outputs, encoder_attention_mask, batch_size,
                      decoder_start_token_id, eos_token_id, forced_bos_token_id,
-                     max_new_tokens, num_beams):
+                     max_new_tokens, num_beams, do_sample=False):
         device = encoder_outputs[0].device
         vocab_size = self.language_model.config.vocab_size
 
@@ -508,7 +508,19 @@ class Florence2(nn.Module):
                 next_token_scores = F.log_softmax(next_token_logits, dim=-1)
 
             next_scores = (next_token_scores + beam_scores[:, None]).view(batch_size, num_beams * vocab_size)
-            topk_scores, topk_indices = torch.topk(next_scores, 2 * num_beams, dim=-1, largest=True, sorted=True)
+
+            # Step 0 with forced_bos is deterministic (only one valid token across all beams),
+            # so skip sampling there — multinomial would fail with fewer nonzero entries than samples.
+            sampling = do_sample and not (step == 0 and forced_bos_token_id is not None)
+            if sampling:
+                # HF beam-sample: multinomial without replacement over softmax(next_scores), then sort desc
+                probs = F.softmax(next_scores, dim=-1)
+                topk_indices = torch.multinomial(probs, num_samples=2 * num_beams)
+                topk_scores = torch.gather(next_scores, -1, topk_indices)
+                topk_scores, _sort_idx = torch.sort(topk_scores, descending=True, dim=-1)
+                topk_indices = torch.gather(topk_indices, -1, _sort_idx)
+            else:
+                topk_scores, topk_indices = torch.topk(next_scores, 2 * num_beams, dim=-1, largest=True, sorted=True)
 
             topk_beam_indices = topk_indices.div(vocab_size, rounding_mode='floor')
             topk_token_ids = topk_indices % vocab_size
