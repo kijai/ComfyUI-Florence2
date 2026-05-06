@@ -1,9 +1,9 @@
 [project]
 name = "comfyui-florence2"
 description = "Nodes to use Florence2 VLM for image vision tasks: object detection, captioning, segmentation and ocr"
-version = "1.0.9"
+version = "1.1.0"
 license = "MIT"
-dependencies = ["transformers>=4.39.0,!=4.50.*"]
+dependencies = ["tokenizers", "matplotlib"]
 
 [project.urls]
 Repository = "https://github.com/kijai/ComfyUI-Florence2"
