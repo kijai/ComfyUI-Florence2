@@ -345,8 +345,8 @@ class Florence2Run:
             }
         }
     
-    RETURN_TYPES = ("IMAGE", "MASK", "STRING", "JSON")
-    RETURN_NAMES =("image", "mask", "caption", "data") 
+    RETURN_TYPES = ("IMAGE", "MASK", "STRING", "JSON", "INT")
+    RETURN_NAMES =("image", "mask", "caption", "data", "bbox_count")
     FUNCTION = "encode"
     CATEGORY = "Florence2"
 
@@ -411,6 +411,7 @@ class Florence2Run:
         out_masks = []
         out_results = []
         out_data = []
+        bbox_count = 0
         pbar = ProgressBar(len(image))
         for img in image:
             image_pil = F.to_pil_image(img)
@@ -453,6 +454,7 @@ class Florence2Run:
                 ax.imshow(image_pil)
                 bboxes = parsed_answer[task_prompt]['bboxes']
                 labels = parsed_answer[task_prompt]['labels']
+                bbox_count += len(bboxes)
 
                 mask_indexes = []
                 # Determine mask indexes outside the loop
@@ -629,7 +631,8 @@ class Florence2Run:
                 overlay = Image.new('RGBA', image_pil.size, (255, 255, 255, 0))
                 draw = ImageDraw.Draw(overlay)
                 bboxes, labels = predictions['quad_boxes'], predictions['labels']
-                
+                bbox_count += len(bboxes)
+
                 # Create a new black image for the mask
                 mask_image = Image.new('RGB', (W, H), 'black')
                 mask_draw = ImageDraw.Draw(mask_image)
@@ -720,7 +723,7 @@ class Florence2Run:
             mm.free_memory(1e30, patcher.load_device, keep_loaded=keep)
             mm.soft_empty_cache()
         
-        return (out_tensor, out_mask_tensor, out_results, out_data)
+        return (out_tensor, out_mask_tensor, out_results, out_data, bbox_count)
      
 NODE_CLASS_MAPPINGS = {
     "DownloadAndLoadFlorence2Model": DownloadAndLoadFlorence2Model,
